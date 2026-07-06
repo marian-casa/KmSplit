@@ -33,6 +33,7 @@ KmSplit digitaliza y automatiza ese proceso, ofreciendo:
 
 **Backend:** Django + Django REST Framework, PostgreSQL
 **Frontend:** Angular (standalone components), Html, Css, Tailwind CSS
+**Diseño:** Figma
 **Infraestructura:** Docker, Docker Compose
 **Deploy:** Vercel
 
@@ -60,6 +61,9 @@ git clone https://github.com/tu-usuario/kmsplit.git
 ## 📸 Capturas / Demo
 
 > _Se agregarán capturas de pantalla de todo el avance del proyecto, como los diagramas de fluyo, capturas de los wireframos y el modelo relacional de la base de datos en esta primera estapa.
+> Link al Figma: https://www.figma.com/design/laSA5OAyx2tbP8l0ezerSE/KmSplit?node-id=0-1&t=eRqsWqXdQEigd7KL-1
+> <img width="1239" height="331" alt="image" src="https://github.com/user-attachments/assets/4cfcc940-c68d-421c-ae1f-398d73609b13" />
+
 
 ## 🗺️ Roadmap
 
