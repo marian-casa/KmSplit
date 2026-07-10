@@ -1,6 +1,6 @@
 # KmSplit 🚗⛽
 
-> Reparto justo del gasto de nafta en autos compartidos, proporcional a los km recorridos por cada persona.
+> Reparto justo del gasto de combustible en autos compartidos, proporcional a los km recorridos por cada persona.
 
 ## Descripción
 
@@ -10,7 +10,7 @@ La app permite registrar los viajes diarios de cada conductor y las cargas de co
 
 ## Problema que resuelve
 
-Cuando varias personas comparten un vehículo (por ejemplo, en una familia), es común que el gasto de nafta se divida en partes iguales sin importar quién usó más el auto. Esto genera injusticias y discusiones. Llevar este control a mano en una planilla de cálculo funciona, pero es incómodo, propenso a errores y difícil de mantener actualizado desde el celular.
+Cuando varias personas comparten un vehículo (por ejemplo, en una familia), es común que el gasto de combustible se divida en partes iguales sin importar quién usó más el auto. Esto genera injusticias y discusiones. Llevar este control a mano en una planilla de cálculo funciona, pero es incómodo, propenso a errores y difícil de mantener actualizado desde el celular.
 
 KmSplit digitaliza y automatiza ese proceso, ofreciendo:
 
@@ -32,20 +32,20 @@ KmSplit digitaliza y automatiza ese proceso, ofreciendo:
 ## Stack tecnológico
 
 **Backend:** Django + Django REST Framework, PostgreSQL
-**Frontend:** Angular (standalone components), Html, Css, Tailwind CSS
+**Frontend:** Angular, Html, Css, Tailwind
 **Diseño:** Figma
 **Infraestructura:** Docker, Docker Compose
 **Deploy:** Vercel
 
 ## 📂 Estructura del proyecto
 
-```
+
 kmsplit/
 ├── backend/          # API Django REST Framework
 ├── frontend/         # App Angular
 ├── docker-compose.yml
 └── README.md
-```
+
 <!---
 ## Instalación y uso
 
