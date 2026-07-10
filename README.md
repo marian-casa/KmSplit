@@ -39,25 +39,19 @@ KmSplit digitaliza y automatiza ese proceso, ofreciendo:
 
 ## 📂 Estructura del proyecto
 
-
 kmsplit/
 ├── backend/          # API Django REST Framework
 ├── frontend/         # App Angular
 ├── docker-compose.yml
 └── README.md
 
-<!---
-## Instalación y uso
 
-> _Sección en construcción — se completará a medida que avance el desarrollo._
 
-```bash
-# clonar el repo
-git clone https://github.com/tu-usuario/kmsplit.git
 
-# instrucciones de backend y frontend próximamente
-```
--->
+
+
+
+
 ## 📸 Capturas / Demo
 
 > Se agregarán capturas de pantalla de todo el avance del proyecto, como los diagramas de fluyo, capturas de los wireframos y el modelo relacional de la base de datos en esta primera estapa.
@@ -70,6 +64,10 @@ git clone https://github.com/tu-usuario/kmsplit.git
 > <img width="879" height="545" alt="image" src="https://github.com/user-attachments/assets/d72e5287-f259-4289-8776-a562b8c54896" />
 > Registro de carga, Resumen y Historial semanal
 > <img width="888" height="549" alt="image" src="https://github.com/user-attachments/assets/82c94691-b977-405a-b8fd-ab19e437fdc9" />
+
+
+
+
 
 
 ## Roadmap
