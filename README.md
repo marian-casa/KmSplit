@@ -54,8 +54,70 @@ kmsplit/
 
 ## 📸 Capturas / Demo
 
-> Se agregarán capturas de pantalla de todo el avance del proyecto, como los diagramas de flujo, capturas de los wireframos y el modelo relacional de la base de datos en esta primera estapa.
+> Se agregarán capturas de pantalla de todo el avance del proyecto, como los diagramas de flujo, capturas de los wireframes y el modelo relacional de la base de datos en esta primera estapa.        
 >
+
+### 🔄 Diagrama de Flujo
+
+Se documentó el flujo completo de la aplicación, desde el onboarding del usuario hasta la lógica de liquidación automática, incluyendo el circuito de edición de viajes cargados tarde y su impacto en el recálculo del reparto.
+
+💡 **¿Por qué es importante este flujo?**
+
+El punto más delicado del sistema es la liquidación: si un viaje se carga después de que ya se generó el reparto de una carga de combustible, el sistema lo detecta, lo asocia al período correspondiente y **recalcula automáticamente** cuánto le toca pagar a cada integrante — sin intervención manual.
+
+```mermaid
+flowchart TD
+    A([Usuario abre la app]) --> B{¿Tiene cuenta?}
+    B -- No --> C[Registro]
+    B -- Sí --> D[Login]
+    C --> D
+    D --> E{¿Pertenece a algún grupo?}
+    E -- No --> F[Crear grupo y agregar vehículo]
+    E -- Sí --> G[Selección de vehículo]
+    F --> G
+    G --> H[Menú del vehículo]
+
+    H --> I[Registrar viaje]
+    H --> J[Registrar carga]
+    H --> K[Ver dashboard]
+    H --> L[Historial]
+
+    I --> I0[Muestra último viaje cargado]
+    I0 --> I1{¿Editar último o cargar nuevo?}
+    I1 -- Cargar nuevo --> I2[Ingresa fecha y km final]
+    I1 -- Editar último --> I2
+    I2 --> I3[Sistema calcula km recorridos]
+    I3 --> I4{¿El km cae en un settlement ya existente?}
+    I4 -- Sí --> I5[Asigna settlement_id al viaje]
+    I4 -- No --> I6[(Guarda viaje sin settlement_id)]
+    I5 --> I7[Recalcula ese settlement]
+    I7 --> I8[(Actualiza settlement_details)]
+    I6 --> H
+    I8 --> H
+
+    L --> L1[Lista de viajes y cargas]
+    L1 --> L2[Editar un viaje]
+    L2 --> I4
+
+    J --> J1[Ingresa fecha, km odómetro y monto]
+    J1 --> J2[Sistema busca viajes desde la última carga]
+    J2 --> J3[Calcula km_sin_asignar]
+    J3 --> J4{¿Hay km sin asignar?}
+    J4 -- Sí --> J5[Reparte equitativamente entre integrantes]
+    J4 -- No --> J6[Calcula % de uso por integrante]
+    J5 --> J6
+    J6 --> J7[(Crea settlement + settlement_details)]
+    J7 --> K
+
+    K --> K1[Muestra últimos 5 registros]
+    K --> K2[Muestra km sin asignar, si hay]
+    K --> K3[Muestra gráfico de uso por integrante]
+    K --> K4{¿Ver más?}
+    K4 -- Semana --> K5[Vista semanal]
+    K4 -- Histórico --> K6[Historial completo]
+```
+
+
 > 
 > 🎨 **Paleta de colores**       
 Gama de azules y grises pensada para transmitir claridad y confianza, con acentos puntuales (ámbar para alertas, verde para confirmaciones) que ayudan al usuario a identificar rápido el estado de sus registros.
