@@ -56,22 +56,30 @@ kmsplit/
 
 > Se agregarán capturas de pantalla de todo el avance del proyecto, como los diagramas de flujo, capturas de los wireframos y el modelo relacional de la base de datos en esta primera estapa.
 >
-> Link al Figma: https://www.figma.com/design/laSA5OAyx2tbP8l0ezerSE/KmSplit?node-id=0-1&t=eRqsWqXdQEigd7KL-1
-> <img width="1239" height="331" alt="image" src="https://github.com/user-attachments/assets/4cfcc940-c68d-421c-ae1f-398d73609b13" />
+> 
+> 🎨 **Paleta de colores**       
+Gama de azules y grises pensada para transmitir claridad y confianza, con acentos puntuales (ámbar para alertas, verde para confirmaciones) que ayudan al usuario a identificar rápido el estado de sus registros.
+> 
+Ver paleta completa:     
+> <img width="1239" height="331" alt="image" src="https://github.com/user-attachments/assets/4cfcc940-c68d-421c-ae1f-398d73609b13" />        
+Link al Figma: https://www.figma.com/design/laSA5OAyx2tbP8l0ezerSE/KmSplit?node-id=0-1&t=eRqsWqXdQEigd7KL-1    
 
-> **Wireframes mobile-first**
+📱 **Wireframes (Mobile-First)**    
+Antes de escribir código se diseñaron los wireframes de baja fidelidad de las 9 pantallas del MVP, priorizando un flujo mobile-first ya que la carga de datos (viajes y combustible) se hace principalmente desde el celular, al lado del auto.    
+    
+Ver wireframes: 
 > 
-> Login, Registro y Recuperar contraseña
+> Login, Registro y Recuperar contraseña    
 > 
-> <img width="873" height="549" alt="image" src="https://github.com/user-attachments/assets/78a56cb6-f0da-4b63-b659-c335a4968b07" />
+> <img width="873" height="549" alt="image" src="https://github.com/user-attachments/assets/78a56cb6-f0da-4b63-b659-c335a4968b07" />    
 
-> Seleccion de vehículo, Menú del vehículo y Registrar viaje
+> Seleccion de vehículo, Menú del vehículo y Registrar viaje    
 > 
-> <img width="879" height="545" alt="image" src="https://github.com/user-attachments/assets/d72e5287-f259-4289-8776-a562b8c54896" />
+> <img width="879" height="545" alt="image" src="https://github.com/user-attachments/assets/d72e5287-f259-4289-8776-a562b8c54896" />      
 
-> Registro de carga, Resumen y Historial semanal
+> Registro de carga, Resumen y Historial semanal    
 > 
-> <img width="888" height="549" alt="image" src="https://github.com/user-attachments/assets/82c94691-b977-405a-b8fd-ab19e437fdc9" />
+> <img width="888" height="549" alt="image" src="https://github.com/user-attachments/assets/82c94691-b977-405a-b8fd-ab19e437fdc9" />    
 
 📂 Estructura de la Base de Datos      
 Para este proyecto se diseñó el Modelo Relacional utilizando dbdiagram.io, una potente herramienta basada en DBML (Database Markup Language). Este enfoque de "arquitectura como código" permite mantener la documentación visual perfectamente sincronizada con la estructura lógica del sistema.
