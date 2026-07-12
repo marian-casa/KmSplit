@@ -31,19 +31,19 @@ KmSplit digitaliza y automatiza ese proceso, ofreciendo:
 
 ## Stack tecnológico
 
-**Backend:** Django + Django REST Framework, PostgreSQL
-**Frontend:** Angular, Html, Css, Tailwind
-**Diseño:** Figma
-**Infraestructura:** Docker, Docker Compose
-**Deploy:** Vercel
+**Backend:** Django + Django REST Framework, PostgreSQL    
+**Frontend:** Angular, Html, Css, Tailwind    
+**Diseño:** Figma    
+**Infraestructura:** Docker, Docker Compose    
+**Deploy:** Vercel    
 
 ## 📂 Estructura del proyecto
 
-kmsplit/
-├── backend/          # API Django REST Framework
-├── frontend/         # App Angular
-├── docker-compose.yml
-└── README.md
+kmsplit/    
+├── backend/          # API Django REST Framework    
+├── frontend/         # App Angular    
+├── docker-compose.yml    
+└── README.md    
 
 
 
@@ -71,6 +71,18 @@ kmsplit/
 > Registro de carga, Resumen y Historial semanal
 > 
 > <img width="888" height="549" alt="image" src="https://github.com/user-attachments/assets/82c94691-b977-405a-b8fd-ab19e437fdc9" />
+
+📂 Estructura de la Base de Datos      
+Para este proyecto se diseñó el Modelo Relacional utilizando dbdiagram.io, una potente herramienta basada en DBML (Database Markup Language). Este enfoque de "arquitectura como código" permite mantener la documentación visual perfectamente sincronizada con la estructura lógica del sistema.
+
+💡 ¿Por qué se incluye este modelo y para qué sirve?
+- Claridad del Dominio: Permite entender de un vistazo cómo interactúan las entidades críticas del sistema (como users, vehicles, groups y trips).
+- Integridad de Datos: Documenta de forma explícita las relaciones de la base de datos, definiendo las claves primarias (pk) y foráneas (fk) que aseguran la consistencia de la información.
+- Mantenibilidad Extensible: Al estar escrito en código DBML, cualquier cambio futuro en el modelo se puede versionar en Git de la misma manera que el código fuente de la aplicación.
+- Agilidad en el Desarrollo: Sirve como una guía visual directa para escribir las migraciones, modelos o consultas en el backend sin lugar a ambigüedades.
+
+Link al Diagrama del Modelo Relacional: https://dbdiagram.io/d/KmSplit-6a5079094ac62e474c724e47     
+<img width="1239" height="798" alt="image" src="https://github.com/user-attachments/assets/03323a2e-888f-42a1-b673-3a5da96884dc" />
 
 
 
