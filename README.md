@@ -54,7 +54,8 @@ kmsplit/
 
 ## 📸 Capturas / Demo
 
-> Se agregarán capturas de pantalla de todo el avance del proyecto, como los diagramas de fluyo, capturas de los wireframos y el modelo relacional de la base de datos en esta primera estapa.
+> Se agregarán capturas de pantalla de todo el avance del proyecto, como los diagramas de flujo, capturas de los wireframos y el modelo relacional de la base de datos en esta primera estapa.
+>
 > Link al Figma: https://www.figma.com/design/laSA5OAyx2tbP8l0ezerSE/KmSplit?node-id=0-1&t=eRqsWqXdQEigd7KL-1
 > <img width="1239" height="331" alt="image" src="https://github.com/user-attachments/assets/4cfcc940-c68d-421c-ae1f-398d73609b13" />
 
@@ -82,6 +83,7 @@ Para este proyecto se diseñó el Modelo Relacional utilizando dbdiagram.io, una
 - Agilidad en el Desarrollo: Sirve como una guía visual directa para escribir las migraciones, modelos o consultas en el backend sin lugar a ambigüedades.
 
 Link al Diagrama del Modelo Relacional: https://dbdiagram.io/d/KmSplit-6a5079094ac62e474c724e47     
+
 <img width="1239" height="798" alt="image" src="https://github.com/user-attachments/assets/03323a2e-888f-42a1-b673-3a5da96884dc" />
 
 
@@ -93,7 +95,7 @@ Link al Diagrama del Modelo Relacional: https://dbdiagram.io/d/KmSplit-6a5079094
 
 - [x] Definición del proyecto y modelo de datos
 - [x] Wireframes mobile-first
-- [ ] Modelos y lógica de backend
+- [x] Modelos y lógica de backend
 - [ ] CRUD básico (viajes, cargas, grupos)
 - [ ] Lógica de liquidación/reparto
 - [ ] Frontend mobile-first
