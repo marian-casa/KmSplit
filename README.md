@@ -44,10 +44,8 @@ kmsplit/
 │   ├── Dockerfile  
 │   ├── requirements.txt    
 │   ├── .env.example    
-│   └── (acá vas a correr django-admin startproject)    
 ├── frontend/   
-│   ├── Dockerfile  
-│   └── (acá vas a correr ng new)   
+│   ├── Dockerfile       
 ├── docker-compose.yml  
 ├── .gitignore  
 └── README.md   
