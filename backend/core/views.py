@@ -15,6 +15,7 @@ from .serializers import (
     TripSerializer,
     VehicleSerializer,
 )
+from . import services
 
 
 class GroupViewSet(viewsets.ModelViewSet):
@@ -114,12 +115,12 @@ class TripViewSet(viewsets.ModelViewSet):
         return qs.order_by("-trip_date")
 
     def perform_create(self, serializer):
-        serializer.save(user=self.request.user)
+        trip = serializer.save(user=self.request.user)
+        services.assign_and_recalculate_trip(trip)
 
     def perform_update(self, serializer):
-        serializer.save(edited_by=self.request.user)
-        # TODO Fase 3: si el viaje cae en el rango km de un settlement existente,
-        # asignarle ese settlement_id y disparar el recálculo.
+        trip = serializer.save(edited_by=self.request.user)
+        services.assign_and_recalculate_trip(trip)
 
     def get_permissions(self):
         if self.action in ("update", "partial_update"):
@@ -144,8 +145,7 @@ class FuelLoadViewSet(viewsets.ModelViewSet):
 
     def perform_create(self, serializer):
         fuel_load = serializer.save(loaded_by=self.request.user)
-        # TODO Fase 3: acá se dispara automáticamente el cálculo del Settlement
-        # (buscar trips sin settlement en el rango de km, repartir gasto, etc.)
+        services.create_settlement_for_fuel_load(fuel_load)
         return fuel_load
 
 

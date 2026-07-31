@@ -47,7 +47,7 @@ class VehicleSerializer(serializers.ModelSerializer):
             "id", "group", "name", "fuel_type", "photo_url",
             "current_km", "split_unassigned_km_all_members", "created_at",
         ]
-        read_only_fields = ["id", "current_km", "created_at"]
+        read_only_fields = ["id", "created_at"]
 
 
 class TripSerializer(serializers.ModelSerializer):
@@ -61,10 +61,26 @@ class TripSerializer(serializers.ModelSerializer):
         read_only_fields = ["id", "user", "km_traveled", "settlement", "edited_by", "created_at", "updated_at"]
 
     def validate(self, data):
+        vehicle = data.get("vehicle", getattr(self.instance, "vehicle", None))
         start_km = data.get("start_km", getattr(self.instance, "start_km", None))
         end_km = data.get("end_km", getattr(self.instance, "end_km", None))
+
         if start_km is not None and end_km is not None and end_km <= start_km:
             raise serializers.ValidationError("El km final debe ser mayor al km inicial")
+
+        if vehicle and start_km is not None and end_km is not None:
+            overlapping = Trip.objects.filter(
+                vehicle=vehicle, start_km__lt=end_km, end_km__gt=start_km
+            )
+            if self.instance:
+                overlapping = overlapping.exclude(pk=self.instance.pk)
+            conflict = overlapping.select_related("user").first()
+            if conflict:
+                raise serializers.ValidationError(
+                    f"Los km se superponen con un viaje de {conflict.user.name}"
+                    f"({conflict.start_km}-{conflict.end_km} km). Revisá el historial."
+                )
+        
         return data
 
 

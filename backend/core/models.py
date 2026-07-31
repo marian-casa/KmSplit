@@ -204,16 +204,18 @@ class SettlementDetail(models.Model):
         settings.AUTH_USER_MODEL, on_delete=models.PROTECT, related_name="settlement_details"
     )
     registered_km = models.PositiveIntegerField(help_text="Km que esa persona realmente cargó")
-    unassigned_km_share = models.PositiveIntegerField(
-        default=0, help_text="Porción de km sin asignar repartida equitativamente"
+    unassigned_km_share = models.DecimalField(
+        max_digits=8,
+        decimal_places=2,
+        default=0,
+        help_text='Porción de km sin asignar repartida equitativamente (puede tener decimales)',
     )
-    km_driven = models.PositiveIntegerField(editable=False)
+    km_driven = models.DecimalField(
+        max_digits=8, decimal_places=2, editable=False,
+        help_text= 'registered_km + unassigned_km_share, usado para el %. Lo calcula core/services.py'
+    )
     percentage = models.DecimalField(max_digits=5, decimal_places=2)
     amount_owed = models.DecimalField(max_digits=12, decimal_places=2)
-
-    def save(self, *args, **kwargs):
-        self.km_driven = self.registered_km + self.unassigned_km_share
-        super().save(*args, **kwargs)
 
     def __str__(self):
         return f"{self.user} debe ${self.amount_owed} en {self.settlement}"
