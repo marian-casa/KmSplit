@@ -5,6 +5,9 @@ backend/.env
 # Python
 __pycache__/
 *.pyc
+.pytest_cache/
+.coverage
+htmlcov/
 backend/venv/
 backend/db.sqlite3
 
