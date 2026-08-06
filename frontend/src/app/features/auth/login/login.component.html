@@ -1,0 +1,48 @@
+<div class="screen">
+  <div class="login-logo">
+    <h1>Km<span>Split</span></h1>
+    <p class="login-tagline">Repartí el combustible, no las discusiones</p>
+  </div>
+
+  <form [formGroup]="form" (ngSubmit)="submit()" class="login-form">
+    <div>
+      <input
+        class="field"
+        type="email"
+        formControlName="email"
+        placeholder="Email"
+        autocomplete="email"
+      />
+      @if (form.controls.email.invalid && form.controls.email.touched) {
+        <p class="field-error">Ingresá un email válido.</p>
+      }
+    </div>
+
+    <div>
+      <input
+        class="field"
+        type="password"
+        formControlName="password"
+        placeholder="Contraseña"
+        autocomplete="current-password"
+      />
+      @if (form.controls.password.invalid && form.controls.password.touched) {
+        <p class="field-error">La contraseña es obligatoria.</p>
+      }
+    </div>
+
+    <a class="link forgot-link" routerLink="/recuperar-contrasena">¿Olvidaste tu contraseña?</a>
+
+    @if (errorMessage()) {
+      <p class="field-error login-error">{{ errorMessage() }}</p>
+    }
+
+    <button class="btn" type="submit" [disabled]="loading()">
+      {{ loading() ? 'Ingresando...' : 'Iniciar sesión' }}
+    </button>
+  </form>
+
+  <div class="login-footer">
+    <a class="link" routerLink="/registro">¿No tenés cuenta? <strong>Crear cuenta</strong></a>
+  </div>
+</div>

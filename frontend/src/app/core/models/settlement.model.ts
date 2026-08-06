@@ -1,0 +1,26 @@
+export type SettlementStatus = 'pendiente' | 'pagado';
+
+export interface SettlementDetail {
+  id: number;
+  user: number;
+  user_name: string;
+  registered_km: number;
+  unassigned_km_share: number;
+  km_driven: number;
+  percentage: number;
+  amount_owed: number;
+}
+
+export interface Settlement {
+  id: number;
+  vehicle: number;
+  fuel_load: number;
+  period_start_km: number;
+  period_end_km: number;
+  total_amount: number;
+  unassigned_km: number;
+  status: SettlementStatus;
+  status_updated_by: number | null;
+  created_at: string;
+  details: SettlementDetail[];
+}

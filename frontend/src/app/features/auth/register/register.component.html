@@ -1,0 +1,54 @@
+<div class="screen">
+  <div class="auth-header">
+    <button class="icon-btn" type="button" routerLink="/login" aria-label="Volver">‹</button>
+    <h1>Crear Cuenta</h1>
+    <span class="icon-btn-spacer"></span>
+  </div>
+
+  <form [formGroup]="form" (ngSubmit)="submit()" class="auth-form">
+    <div>
+      <input class="field" type="text" formControlName="name" placeholder="Nombre" />
+      @if (form.controls.name.invalid && form.controls.name.touched) {
+        <p class="field-error">Ingresá tu nombre.</p>
+      }
+    </div>
+
+    <div>
+      <input class="field" type="email" formControlName="email" placeholder="Email" />
+      @if (form.controls.email.invalid && form.controls.email.touched) {
+        <p class="field-error">Ingresá un email válido.</p>
+      }
+    </div>
+
+    <div>
+      <input class="field" type="password" formControlName="password" placeholder="Contraseña" />
+      @if (form.controls.password.invalid && form.controls.password.touched) {
+        <p class="field-error">Mínimo 8 caracteres.</p>
+      }
+    </div>
+
+    <div>
+      <input
+        class="field"
+        type="password"
+        formControlName="confirmPassword"
+        placeholder="Confirmar Contraseña"
+      />
+      @if (form.errors?.['passwordMismatch'] && form.controls.confirmPassword.touched) {
+        <p class="field-error">Las contraseñas no coinciden.</p>
+      }
+    </div>
+
+    @if (errorMessage()) {
+      <p class="field-error">{{ errorMessage() }}</p>
+    }
+
+    <button class="btn" type="submit" [disabled]="loading()">
+      {{ loading() ? 'Creando cuenta...' : 'Crear cuenta' }}
+    </button>
+  </form>
+
+  <div class="auth-footer">
+    <a class="link" routerLink="/login">¿Ya tenés cuenta? <strong>Iniciar sesión</strong></a>
+  </div>
+</div>

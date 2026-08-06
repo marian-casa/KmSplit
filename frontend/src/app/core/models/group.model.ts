@@ -1,0 +1,20 @@
+export type GroupRole = 'owner' | 'admin' | 'member';
+
+export interface GroupMembership {
+  id: number;
+  user: number;
+  user_name: string;
+  user_email: string;
+  role: GroupRole;
+  is_active: boolean;
+  joined_at: string;
+}
+
+export interface Group {
+  id: number;
+  name: string;
+  invite_code: string;
+  created_by: number;
+  created_at: string;
+  members: GroupMembership[];
+}
