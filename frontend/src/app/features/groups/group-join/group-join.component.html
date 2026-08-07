@@ -1,0 +1,32 @@
+<div class="screen">
+  <div class="screen-header">
+    <button class="icon-btn" type="button" routerLink="/grupos/nuevo" aria-label="Volver">‹</button>
+    <h1>Unirme a un Grupo</h1>
+    <span class="icon-btn-spacer"></span>
+  </div>
+
+  <p class="muted">Ingresá el código de invitación que te compartieron.</p>
+
+  <form [formGroup]="form" (ngSubmit)="submit()" class="group-form">
+    <div>
+      <input
+        class="field invite-input"
+        type="text"
+        formControlName="invite_code"
+        placeholder="Código de invitación"
+        maxlength="12"
+      />
+      @if (form.controls.invite_code.invalid && form.controls.invite_code.touched) {
+        <p class="field-error">Ingresá un código.</p>
+      }
+    </div>
+
+    @if (errorMessage()) {
+      <p class="field-error">{{ errorMessage() }}</p>
+    }
+
+    <button class="btn" type="submit" [disabled]="loading()">
+      {{ loading() ? 'Uniéndome...' : 'Unirme al grupo' }}
+    </button>
+  </form>
+</div>

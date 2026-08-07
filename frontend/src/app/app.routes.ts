@@ -24,6 +24,31 @@ export const routes: Routes = [
   },
 
   {
+    path: 'grupos/nuevo',
+    canActivate: [authGuard],
+    loadComponent: () =>
+      import('./features/groups/group-onboarding/group-onboarding.component').then(
+        (m) => m.GroupOnboardingComponent,
+      ),
+  },
+  {
+    path: 'grupos/crear',
+    canActivate: [authGuard],
+    loadComponent: () =>
+      import('./features/groups/group-create/group-create.component').then(
+        (m) => m.GroupCreateComponent,
+      ),
+  },
+  {
+    path: 'grupos/unirse',
+    canActivate: [authGuard],
+    loadComponent: () =>
+      import('./features/groups/group-join/group-join.component').then(
+        (m) => m.GroupJoinComponent,
+      ),
+  },
+
+  {
     path: 'vehiculos',
     canActivate: [authGuard],
     loadComponent: () =>
@@ -31,8 +56,16 @@ export const routes: Routes = [
         (m) => m.VehicleSelectComponent,
       ),
   },
+  {
+    path: 'vehiculos/nuevo',
+    canActivate: [authGuard],
+    loadComponent: () =>
+      import('./features/vehicles/vehicle-create/vehicle-create.component').then(
+        (m) => m.VehicleCreateComponent,
+      ),
+  },
 
-  // próximos pasos: crear/unirse a grupo, crear vehículo, menú del vehículo, registrar viaje, registrar carga, resumen, historial, admin.
+  // lo que falta -> menú del vehículo, registrar viaje, registrar carga, resumen, historial, admin del grupo.
 
   { path: '**', redirectTo: 'login' },
 ];

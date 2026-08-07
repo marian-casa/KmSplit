@@ -1,0 +1,35 @@
+<div class="screen">
+  <div class="screen-header">
+    <button class="icon-btn" type="button" routerLink="/grupos/nuevo" aria-label="Volver">‹</button>
+    <h1>Crear Grupo</h1>
+    <span class="icon-btn-spacer"></span>
+  </div>
+
+  @if (!createdGroup()) {
+    <p class="muted">Ponele un nombre a tu grupo (ej: "Familia Pérez").</p>
+
+    <form [formGroup]="form" (ngSubmit)="submit()" class="group-form">
+      <div>
+        <input class="field" type="text" formControlName="name" placeholder="Nombre del grupo" />
+        @if (form.controls.name.invalid && form.controls.name.touched) {
+          <p class="field-error">Ingresá un nombre.</p>
+        }
+      </div>
+
+      @if (errorMessage()) {
+        <p class="field-error">{{ errorMessage() }}</p>
+      }
+
+      <button class="btn" type="submit" [disabled]="loading()">
+        {{ loading() ? 'Creando...' : 'Crear grupo' }}
+      </button>
+    </form>
+  } @else {
+    <div class="group-created">
+      <p class="group-created-title">¡Grupo creado! 🎉</p>
+      <p class="muted">Compartí este código con quienes quieras sumar al grupo:</p>
+      <div class="invite-code">{{ createdGroup()!.invite_code }}</div>
+      <button class="btn" type="button" (click)="continue()">Continuar</button>
+    </div>
+  }
+</div>

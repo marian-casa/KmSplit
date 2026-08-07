@@ -9,7 +9,7 @@
   } @else if (errorMessage()) {
     <p class="field-error">{{ errorMessage() }}</p>
   } @else if (vehicles().length === 0) {
-    <p class="muted">Todavía no tenés vehículos. Creá uno o unite a un grupo para empezar.</p>
+    <p class="muted">Todavía no tenés vehículos. Agregá el primero para empezar.</p>
   } @else {
     <div class="vehicle-list">
       @for (vehicle of vehicles(); track vehicle.id) {
@@ -24,5 +24,5 @@
     </div>
   }
 
-  <button class="btn btn-secondary vehicle-add" type="button">+ Agregar vehículo</button>
+  <a class="btn btn-secondary vehicle-add" routerLink="/vehiculos/nuevo">+ Agregar vehículo</a>
 </div>

@@ -1,0 +1,74 @@
+<div class="screen">
+  <div class="screen-header">
+    <button class="icon-btn" type="button" routerLink="/vehiculos" aria-label="Volver">‹</button>
+    <h1>Agregar Vehículo</h1>
+    <span class="icon-btn-spacer"></span>
+  </div>
+
+  @if (loadingGroups()) {
+    <p class="muted">Cargando...</p>
+  } @else if (groups().length === 0) {
+    <p class="muted">
+      Todavía no formás parte de ningún grupo.
+      <a class="link" routerLink="/grupos/nuevo">Creá uno o unite a uno</a> primero.
+    </p>
+  } @else {
+    <form [formGroup]="form" (ngSubmit)="submit()" class="vehicle-form">
+      @if (groups().length > 1) {
+        <div>
+          <select class="select-field" formControlName="group">
+            <option [ngValue]="null" disabled>Elegí el grupo</option>
+            @for (group of groups(); track group.id) {
+              <option [ngValue]="group.id">{{ group.name }}</option>
+            }
+          </select>
+        </div>
+      }
+
+      <div>
+        <input
+          class="field"
+          type="text"
+          formControlName="name"
+          placeholder="Nombre del vehículo (ej: Ford Fiesta)"
+        />
+        @if (form.controls.name.invalid && form.controls.name.touched) {
+          <p class="field-error">Ingresá un nombre.</p>
+        }
+      </div>
+
+      <div>
+        <select class="select-field" formControlName="fuel_type">
+          <option value="">Tipo de combustible (opcional)</option>
+          @for (type of fuelTypes; track type.value) {
+            <option [value]="type.value">{{ type.label }}</option>
+          }
+        </select>
+      </div>
+
+      <div>
+        <input
+          class="field"
+          type="number"
+          formControlName="current_km"
+          placeholder="Km actuales del odómetro"
+        />
+        <p class="field-hint">
+          Es el km que marca el tablero ahora mismo — desde acá arranca el
+          primer período a repartir.
+        </p>
+        @if (form.controls.current_km.invalid && form.controls.current_km.touched) {
+          <p class="field-error">Ingresá el km actual.</p>
+        }
+      </div>
+
+      @if (errorMessage()) {
+        <p class="field-error">{{ errorMessage() }}</p>
+      }
+
+      <button class="btn" type="submit" [disabled]="loading()">
+        {{ loading() ? 'Guardando...' : 'Guardar vehículo' }}
+      </button>
+    </form>
+  }
+</div>
