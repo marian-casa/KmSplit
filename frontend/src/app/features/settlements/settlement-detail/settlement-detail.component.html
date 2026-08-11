@@ -1,0 +1,68 @@
+<div class="screen">
+  <div class="screen-header">
+    <button
+      class="icon-btn"
+      type="button"
+      [routerLink]="['/vehiculo', vehicleId, 'historial']"
+      aria-label="Volver"
+    >
+      ‹
+    </button>
+    <h1>Liquidación</h1>
+    <span class="icon-btn-spacer"></span>
+  </div>
+
+  @if (loading()) {
+    <p class="muted">Cargando...</p>
+  } @else if (errorMessage()) {
+    <p class="field-error">{{ errorMessage() }}</p>
+  } @else if (settlement()) {
+    <div class="settlement-summary">
+      <p class="muted">Período</p>
+      <p class="settlement-period">{{ settlement()!.period_start_km }} — {{ settlement()!.period_end_km }} km</p>
+
+      <div class="summary-grid">
+        <div>
+          <p class="muted">Monto total</p>
+          <p class="summary-value">${{ settlement()!.total_amount }}</p>
+        </div>
+        <div>
+          <p class="muted">Km sin asignar</p>
+          <p class="summary-value">{{ settlement()!.unassigned_km }} km</p>
+        </div>
+      </div>
+
+      <div class="status-row">
+        <span class="status-badge" [class.paid]="settlement()!.status === 'pagado'">
+          {{ settlement()!.status === 'pagado' ? '✅ Pagado' : '⏳ Pendiente' }}
+        </span>
+        @if (canManage()) {
+          <button class="link" type="button" (click)="toggleStatus()" [disabled]="updatingStatus()">
+            Marcar como {{ settlement()!.status === 'pendiente' ? 'pagado' : 'pendiente' }}
+          </button>
+        }
+      </div>
+    </div>
+
+    <div class="section-title">Desglose por integrante</div>
+    <div class="details-list">
+      @for (detail of settlement()!.details; track detail.id) {
+        <div class="detail-row">
+          <div class="detail-header">
+            <span class="detail-name">{{ detail.user_name }}</span>
+            <span class="detail-amount">${{ detail.amount_owed }}</span>
+          </div>
+          <p class="muted detail-breakdown">
+            {{ detail.registered_km }} km propios
+            @if (detail.unassigned_km_share > 0) {
+              + {{ detail.unassigned_km_share }} km del reparto equitativo
+            }
+            = {{ detail.km_driven }} km ({{ detail.percentage }}%)
+          </p>
+        </div>
+      }
+    </div>
+  }
+
+  <app-bottom-nav [vehicleId]="vehicleId" />
+</div>

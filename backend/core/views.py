@@ -47,11 +47,6 @@ class GroupViewSet(viewsets.ModelViewSet):
 
     @action(detail=True, methods=["patch"], url_path="members/(?P<user_id>[^/.]+)")
     def update_member(self, request, pk=None, user_id=None):
-        """
-        PATCH /api/groups/{id}/members/{user_id}/
-        body: {"role": "admin"}  -> solo owner puede cambiar roles
-        body: {"remove": true}   -> owner o admin puede dar de baja a un miembro
-        """
         group = self.get_object()
         acting_membership = get_membership(request.user, group)
         if acting_membership is None or acting_membership.role not in ("owner", "admin"):
@@ -66,15 +61,27 @@ class GroupViewSet(viewsets.ModelViewSet):
 
         new_role = request.data.get("role")
         if new_role:
-            if acting_membership.role != "owner":
-                return Response(
-                    {"detail": "Solo el owner puede cambiar roles"}, status=status.HTTP_403_FORBIDDEN
-                )
             if new_role not in ("admin", "member"):
                 return Response({"detail": "Rol inválido"}, status=status.HTTP_400_BAD_REQUEST)
+
+            if acting_membership.role == "admin":
+                # un admin solo puede promover a un member a admin -- no
+                # puede tocar a otro admin ni degradar a nadie
+                if target.role != "member" or new_role != "admin":
+                    return Response(
+                        {"detail": "Como admin, solo podés promover a un member a admin"},
+                        status=status.HTTP_403_FORBIDDEN,
+                    )
+            # si es owner, puede poner cualquiera de los dos roles sin restricción
+
             target.role = new_role
 
         if request.data.get("remove"):
+            if acting_membership.role == "admin" and target.role != "member":
+                return Response(
+                    {"detail": "Como admin, solo podés dar de baja a members"},
+                    status=status.HTTP_403_FORBIDDEN,
+                )
             target.is_active = False
             target.removed_at = timezone.now()
 

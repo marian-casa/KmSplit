@@ -81,14 +81,6 @@ class TestTripPermissions:
 
 
 class TestGroupRoles:
-    def test_only_owner_can_change_roles(self, family):
-        client = auth_client(family["admin"])
-        response = client.patch(
-            f"/api/groups/{family['group'].id}/members/{family['member'].id}/",
-            {"role": "admin"},
-        )
-        assert response.status_code == 403
-
     def test_owner_can_promote_member(self, family):
         client = auth_client(family["owner"])
         response = client.patch(
@@ -106,6 +98,48 @@ class TestGroupRoles:
         )
         assert response.status_code == 403
 
+    def test_admin_can_promote_member_to_admin(self, family):
+        client = auth_client(family["admin"])  
+        response = client.patch(
+            f"/api/groups/{family['group'].id}/members/{family['member'].id}/",
+            {"role": "admin"},
+        )
+        assert response.status_code == 200
+        assert response.data["role"] == "admin"
+
+    def test_admin_cannot_demote_another_admin(self, family, make_user):
+        from core.models import GroupMembership
+
+        other_admin = make_user("Marian", "marian@test.com")
+        GroupMembership.objects.create(group=family["group"], user=other_admin, role="admin")
+
+        client = auth_client(family["admin"])  # Cami
+        response = client.patch(
+            f"/api/groups/{family['group'].id}/members/{other_admin.id}/",
+            {"role": "member"},
+        )
+        assert response.status_code == 403
+
+    def test_admin_can_remove_a_member(self, family):
+        client = auth_client(family["admin"])
+        response = client.patch(
+            f"/api/groups/{family['group'].id}/members/{family['member'].id}/",
+            {"remove": True},
+        )
+        assert response.status_code == 200
+
+    def test_admin_cannot_remove_another_admin(self, family, make_user):
+        from core.models import GroupMembership
+
+        other_admin = make_user("Marian", "marian2@test.com")
+        GroupMembership.objects.create(group=family["group"], user=other_admin, role="admin")
+
+        client = auth_client(family["admin"])
+        response = client.patch(
+            f"/api/groups/{family['group'].id}/members/{other_admin.id}/",
+            {"remove": True},
+        )
+        assert response.status_code == 403
 
 class TestFuelLoadTriggersSettlement:
     def test_creating_fuel_load_via_api_creates_settlement(self, family, vehicle):
