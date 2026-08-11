@@ -1,0 +1,12 @@
+.fuel-form {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  margin-top: 16px;
+}
+
+.banner-info {
+  background: var(--blue-100);
+  border-color: var(--blue-400);
+  color: var(--blue-700);
+}
