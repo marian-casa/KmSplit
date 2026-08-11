@@ -13,13 +13,13 @@
   } @else {
     <div class="vehicle-list">
       @for (vehicle of vehicles(); track vehicle.id) {
-        <div class="vehicle-card">
+        <a class="vehicle-card" [routerLink]="['/vehiculo', vehicle.id]">
           <div class="vehicle-avatar">🚗</div>
           <div>
             <p class="vehicle-name">{{ vehicle.name }}</p>
             <p class="muted">{{ vehicle.current_km }} km actuales</p>
           </div>
-        </div>
+        </a>
       }
     </div>
   }
