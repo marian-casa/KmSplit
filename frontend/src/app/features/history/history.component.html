@@ -1,0 +1,65 @@
+<div class="screen">
+  <div class="screen-header">
+    <button
+      class="icon-btn"
+      type="button"
+      [routerLink]="['/vehiculo', vehicleId, 'resumen']"
+      aria-label="Volver"
+    >
+      ‹
+    </button>
+    <h1>{{ title }}</h1>
+    <span class="icon-btn-spacer"></span>
+  </div>
+
+  @if (loading()) {
+    <p class="muted">Cargando...</p>
+  } @else if (errorMessage()) {
+    <p class="field-error">{{ errorMessage() }}</p>
+  } @else {
+    <div class="tabs">
+      <button class="tab" type="button" [class.active]="filter() === 'todos'" (click)="filter.set('todos')">
+        Todos
+      </button>
+      <button class="tab" type="button" [class.active]="filter() === 'viajes'" (click)="filter.set('viajes')">
+        Viajes
+      </button>
+      <button class="tab" type="button" [class.active]="filter() === 'cargas'" (click)="filter.set('cargas')">
+        Cargas
+      </button>
+    </div>
+
+    @if (records.length === 0) {
+      <p class="muted empty-message">No hay registros para mostrar acá.</p>
+    } @else {
+      <div class="records-list">
+        @for (record of records; track record.id) {
+          <button
+            class="record-row"
+            type="button"
+            [class.clickable]="record.clickable"
+            [disabled]="!record.clickable"
+            (click)="onRecordClick(record)"
+          >
+            <span class="record-left">
+              <span class="badge">{{ record.date | date: 'dd/MM' }}</span>
+              <span class="record-icon">{{ record.type === 'fuel' ? '⛽' : '📍' }}</span>
+              <span class="muted">{{ record.userName }} · {{ record.label }}</span>
+            </span>
+            @if (record.clickable) {
+              <span class="edit-hint">{{ record.type === 'fuel' ? '👁️' : '✏️' }}</span>
+            }
+          </button>
+        }
+      </div>
+    }
+
+    @if (scope === 'week') {
+      <a class="btn btn-secondary" [routerLink]="['/vehiculo', vehicleId, 'historial']">
+        Ver historial completo
+      </a>
+    }
+  }
+
+  <app-bottom-nav [vehicleId]="vehicleId" />
+</div>
