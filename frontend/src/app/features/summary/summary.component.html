@@ -1,0 +1,100 @@
+<div class="screen">
+  <div class="screen-header">
+    <button class="icon-btn" type="button" [routerLink]="['/vehiculo', vehicleId]" aria-label="Volver">‹</button>
+    <h1>Resumen</h1>
+    <span class="icon-btn-spacer"></span>
+  </div>
+
+  @if (loading()) {
+    <p class="muted">Cargando...</p>
+  } @else if (errorMessage()) {
+    <p class="field-error">{{ errorMessage() }}</p>
+  } @else {
+    @if (latestSettlement && latestSettlement.unassigned_km > 0) {
+      <div class="banner-alert">
+        ⚠️ Hay {{ latestSettlement.unassigned_km }} km sin asignar en la última liquidación
+      </div>
+    }
+
+    <div class="section-title">Últimos registros</div>
+    @if (recentRecords.length === 0) {
+      <p class="muted">Todavía no hay registros en este vehículo.</p>
+    } @else {
+      <div class="records-list">
+        @for (record of recentRecords; track record.id) {
+          <div class="record-row">
+            <div class="record-left">
+              <div class="avatar" [style.background]="avatarColor(record.userId)">
+                {{ initials(record.userName) }}
+              </div>
+              <span class="muted">{{ record.userName }} · {{ record.label }}</span>
+            </div>
+            <span class="badge">{{ record.date | date: 'dd/MM' }}</span>
+          </div>
+        }
+      </div>
+    }
+
+    <div class="quick-links">
+      <a class="btn btn-secondary" [routerLink]="['/vehiculo', vehicleId, 'historial', 'semana']">
+        Ver semana
+      </a>
+      <a class="btn btn-secondary" [routerLink]="['/vehiculo', vehicleId, 'historial']">
+        Historial completo
+      </a>
+    </div>
+
+    <div class="section-title">Uso por integrante</div>
+    <div class="tabs">
+      <button
+        class="tab"
+        type="button"
+        [class.active]="selectedPeriod() === 'semana'"
+        (click)="selectedPeriod.set('semana')"
+      >
+        Semana
+      </button>
+      <button
+        class="tab"
+        type="button"
+        [class.active]="selectedPeriod() === 'mes'"
+        (click)="selectedPeriod.set('mes')"
+      >
+        Mes
+      </button>
+      <button
+        class="tab"
+        type="button"
+        [class.active]="selectedPeriod() === '3meses'"
+        (click)="selectedPeriod.set('3meses')"
+      >
+        3 meses
+      </button>
+    </div>
+
+    @if (usageByMember.length === 0) {
+      <p class="muted">No hay integrantes activos.</p>
+    } @else {
+      <div class="chart-box">
+        <div class="bars">
+          @for (item of usageByMember; track item.userId) {
+            <div class="bar-col">
+              <div class="bar" [style.height.px]="barHeight(item.percentage)" [style.background]="item.color"></div>
+              <span class="bar-label">{{ item.name }}</span>
+            </div>
+          }
+        </div>
+        <div class="legend">
+          @for (item of usageByMember; track item.userId) {
+            <span>
+              <span class="dot" [style.background]="item.color"></span>
+              {{ item.name }} {{ item.percentage }}%
+            </span>
+          }
+        </div>
+      </div>
+    }
+  }
+
+  <app-bottom-nav [vehicleId]="vehicleId" />
+</div>
