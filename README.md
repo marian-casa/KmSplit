@@ -39,76 +39,25 @@ KmSplit digitaliza y automatiza ese proceso, ofreciendo:
 
 ## 📂 Estructura del proyecto   
 
-KmSplit
-├── README.md
-├── backend
-│   ├── Dockerfile
-│   ├── accounts
-│   ├── config
-│   ├── core
-│   │   ├── tests
-│   │   ├── urls.py
-│   │   └── views.py
+**KmSplit**/
+├── backend/                  # API Django REST Framework
+│   ├── accounts/             # Autenticación y usuarios
+│   ├── core/                 # Lógica principal de la aplicación
+│   ├── config/               # Configuración de Django
 │   ├── manage.py
-│   ├── pytest.ini
 │   └── requirements.txt
-├── docker-compose.yml
-├── frontend
-│   ├── Dockerfile
+│
+├── frontend/                 # Aplicación Angular
+│   ├── src/
+│   │   └── app/
+│   │       ├── core/         # Guards, interceptores, modelos y servicios
+│   │       ├── features/    # Funcionalidades principales
+│   │       └── shared/      # Componentes reutilizables
 │   ├── angular.json
-│   ├── package-lock.json
-│   ├── package.json
-│   ├── public
-│   │   └── favicon.ico
-│   ├── src
-│   │   ├── app
-│   │   │   ├── app.config.ts
-│   │   │   ├── app.html
-│   │   │   ├── app.routes.ts
-│   │   │   ├── app.scss
-│   │   │   ├── app.spec.ts
-│   │   │   ├── app.ts
-│   │   │   ├── core
-│   │   │   │   ├── guards
-│   │   │   │   ├── interceptors
-│   │   │   │   ├── models
-│   │   │   │   └── services
-│   │   │   ├── features
-│   │   │   │   ├── admin
-│   │   │   │   ├── auth
-│   │   │   │   │   ├── forgot-password
-│   │   │   │   │   ├── login
-│   │   │   │   │   └── register
-│   │   │   │   ├── fuel-loads
-│   │   │   │   │   └── fuel-load-form
-│   │   │   │   ├── groups
-│   │   │   │   │   ├── group-create
-│   │   │   │   │   ├── group-join
-│   │   │   │   │   └── group-onboarding
-│   │   │   │   ├── history
-│   │   │   │   ├── settlements
-│   │   │   │   ├── summary
-│   │   │   │   ├── trips
-│   │   │   │   │   └── trip-form
-│   │   │   │   └── vehicles
-│   │   │   │       ├── vehicle-home
-│   │   │   │       └── vehicle-select
-│   │   │   └── shared
-│   │   │       ├── bottom-nav
-│   │   │       └── coming-soon
-│   │   ├── environments
-│   │   ├── index.html
-│   │   ├── main.ts
-│   │   └── styles.scss
-│   ├── tsconfig.app.json
-│   ├── tsconfig.json
-│   └── tsconfig.spec.json
-├── package-lock.json
-└── package.json
-
-
-
-
+│   └── package.json
+│
+├── docker-compose.yml        # Orquestación de los servicios
+└── README.md                 # Documentación del proyecto
 
 ## 📸 Capturas / Demo
 
