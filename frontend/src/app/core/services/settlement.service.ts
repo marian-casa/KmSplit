@@ -14,6 +14,10 @@ export class SettlementService {
     return this.http.get<Settlement[]>(`${this.baseUrl}/`, { params: { vehicle: vehicleId } });
   }
 
+  get(id: number): Observable<Settlement> {
+    return this.http.get<Settlement>(`${this.baseUrl}/${id}/`);
+  }
+
   markStatus(id: number, status: SettlementStatus): Observable<Settlement> {
     return this.http.patch<Settlement>(`${this.baseUrl}/${id}/mark_status/`, { status });
   }

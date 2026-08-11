@@ -65,7 +65,61 @@ export const routes: Routes = [
       ),
   },
 
-  // lo que falta -> menú del vehículo, registrar viaje, registrar carga, resumen, historial, admin del grupo.
+  {
+    path: 'vehiculo/:id',
+    canActivate: [authGuard],
+    loadComponent: () =>
+      import('./features/vehicles/vehicle-home/vehicle-home.component').then(
+        (m) => m.VehicleHomeComponent,
+      ),
+  },
+  {
+    path: 'vehiculo/:id/viaje',
+    canActivate: [authGuard],
+    loadComponent: () =>
+      import('./features/trips/trip-form/trip-form.component').then((m) => m.TripFormComponent),
+  },
+  {
+    path: 'vehiculo/:id/carga',
+    canActivate: [authGuard],
+    loadComponent: () =>
+      import('./features/fuel-loads/fuel-load-form/fuel-load-form.component').then(
+        (m) => m.FuelLoadFormComponent,
+      ),
+  },
+  {
+    path: 'vehiculo/:id/resumen',
+    canActivate: [authGuard],
+    loadComponent: () =>
+      import('./features/summary/summary.component').then((m) => m.SummaryComponent),
+  },
+  {
+    path: 'vehiculo/:id/historial',
+    canActivate: [authGuard],
+    data: { scope: 'full' },
+    loadComponent: () =>
+      import('./features/history/history.component').then((m) => m.HistoryComponent),
+  },
+  {
+    path: 'vehiculo/:id/historial/semana',
+    canActivate: [authGuard],
+    data: { scope: 'week' },
+    loadComponent: () =>
+      import('./features/history/history.component').then((m) => m.HistoryComponent),
+  },
+  {
+    path: 'vehiculo/:id/admin',
+    canActivate: [authGuard],
+    loadComponent: () => import('./features/admin/admin.component').then((m) => m.AdminComponent),
+  },
+  {
+    path: 'vehiculo/:id/liquidacion/:settlementId',
+    canActivate: [authGuard],
+    loadComponent: () =>
+      import('./features/settlements/settlement-detail/settlement-detail.component').then(
+        (m) => m.SettlementDetailComponent,
+      ),
+  },
 
   { path: '**', redirectTo: 'login' },
 ];

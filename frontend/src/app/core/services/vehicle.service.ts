@@ -21,4 +21,8 @@ export class VehicleService {
   create(data: Partial<Vehicle>): Observable<Vehicle> {
     return this.http.post<Vehicle>(`${this.baseUrl}/`, data);
   }
+
+  update(id: number, data: Partial<Vehicle>): Observable<Vehicle> {
+    return this.http.patch<Vehicle>(`${this.baseUrl}/${id}/`, data);
+  }
 }

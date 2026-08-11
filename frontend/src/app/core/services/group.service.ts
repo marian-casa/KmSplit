@@ -14,6 +14,10 @@ export class GroupService {
     return this.http.get<Group[]>(`${this.baseUrl}/`);
   }
 
+  get(id: number): Observable<Group> {
+    return this.http.get<Group>(`${this.baseUrl}/${id}/`);
+  }
+
   create(name: string): Observable<Group> {
     return this.http.post<Group>(`${this.baseUrl}/`, { name });
   }
