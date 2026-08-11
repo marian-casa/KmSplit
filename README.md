@@ -37,9 +37,10 @@ KmSplit digitaliza y automatiza ese proceso, ofreciendo:
 **Infraestructura:** Docker, Docker Compose    
 **Deploy:** Vercel    
 
-## 📂 Estructura del proyecto   
+## 📂 Estructura del proyecto  
 
-**KmSplit**/
+```text
+KmSplit/
 ├── backend/                  # API Django REST Framework
 │   ├── accounts/             # Autenticación y usuarios
 │   ├── core/                 # Lógica principal de la aplicación
@@ -58,7 +59,7 @@ KmSplit digitaliza y automatiza ese proceso, ofreciendo:
 │
 ├── docker-compose.yml        # Orquestación de los servicios
 └── README.md                 # Documentación del proyecto
-
+```
 ## 📸 Capturas / Demo
 
 > Se agregarán capturas de pantalla de todo el avance del proyecto, como los diagramas de flujo, capturas de los wireframes y el modelo relacional de la base de datos en esta primera estapa.        
