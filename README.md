@@ -21,34 +21,90 @@ KmSplit digitaliza y automatiza ese proceso, ofreciendo:
 
 ## Funcionalidades (MVP)
 
-- [ ] Registro y login de usuarios
-- [ ] Creación de grupos (familia/convivientes) y vehículo asociado
-- [ ] Carga de viajes diarios (usuario, km inicial, km final)
-- [ ] Carga de combustible (fecha, km del odómetro, monto total)
-- [ ] Cálculo automático de liquidación/reparto entre cargas
-- [ ] Dashboard con historial y gráficos de gasto por persona
-- [ ] Diseño responsive, mobile-first
+- [x] Registro y login de usuarios
+- [x] Creación de grupos (familia/convivientes) y vehículo asociado
+- [x] Carga de viajes diarios (usuario, km inicial, km final)
+- [x] Carga de combustible (fecha, km del odómetro, monto total)
+- [x] Cálculo automático de liquidación/reparto entre cargas
+- [x] Dashboard con historial y gráficos de gasto por persona
+- [x] Diseño responsive, mobile-first
 
 ## Stack tecnológico
 
 **Backend:** Django + Django REST Framework, PostgreSQL    
-**Frontend:** Angular, Html, Css, Tailwind    
+**Frontend:** Angular, Html, Scss, Tailwind    
 **Diseño:** Figma    
 **Infraestructura:** Docker, Docker Compose    
 **Deploy:** Vercel    
 
 ## 📂 Estructura del proyecto   
 
-kmsplit/    
-├── backend/    
-│   ├── Dockerfile  
-│   ├── requirements.txt    
-│   ├── .env.example    
-├── frontend/   
-│   ├── Dockerfile       
-├── docker-compose.yml  
-├── .gitignore  
-└── README.md   
+KmSplit
+├── README.md
+├── backend
+│   ├── Dockerfile
+│   ├── accounts
+│   ├── config
+│   ├── core
+│   │   ├── tests
+│   │   ├── urls.py
+│   │   └── views.py
+│   ├── manage.py
+│   ├── pytest.ini
+│   └── requirements.txt
+├── docker-compose.yml
+├── frontend
+│   ├── Dockerfile
+│   ├── angular.json
+│   ├── package-lock.json
+│   ├── package.json
+│   ├── public
+│   │   └── favicon.ico
+│   ├── src
+│   │   ├── app
+│   │   │   ├── app.config.ts
+│   │   │   ├── app.html
+│   │   │   ├── app.routes.ts
+│   │   │   ├── app.scss
+│   │   │   ├── app.spec.ts
+│   │   │   ├── app.ts
+│   │   │   ├── core
+│   │   │   │   ├── guards
+│   │   │   │   ├── interceptors
+│   │   │   │   ├── models
+│   │   │   │   └── services
+│   │   │   ├── features
+│   │   │   │   ├── admin
+│   │   │   │   ├── auth
+│   │   │   │   │   ├── forgot-password
+│   │   │   │   │   ├── login
+│   │   │   │   │   └── register
+│   │   │   │   ├── fuel-loads
+│   │   │   │   │   └── fuel-load-form
+│   │   │   │   ├── groups
+│   │   │   │   │   ├── group-create
+│   │   │   │   │   ├── group-join
+│   │   │   │   │   └── group-onboarding
+│   │   │   │   ├── history
+│   │   │   │   ├── settlements
+│   │   │   │   ├── summary
+│   │   │   │   ├── trips
+│   │   │   │   │   └── trip-form
+│   │   │   │   └── vehicles
+│   │   │   │       ├── vehicle-home
+│   │   │   │       └── vehicle-select
+│   │   │   └── shared
+│   │   │       ├── bottom-nav
+│   │   │       └── coming-soon
+│   │   ├── environments
+│   │   ├── index.html
+│   │   ├── main.ts
+│   │   └── styles.scss
+│   ├── tsconfig.app.json
+│   ├── tsconfig.json
+│   └── tsconfig.spec.json
+├── package-lock.json
+└── package.json
 
 
 
@@ -168,9 +224,9 @@ Link al Diagrama del Modelo Relacional: https://dbdiagram.io/d/KmSplit-6a5079094
 - [x] Definición del proyecto y modelo de datos
 - [x] Wireframes mobile-first
 - [x] Modelos y lógica de backend
-- [ ] CRUD básico (viajes, cargas, grupos)
-- [ ] Lógica de liquidación/reparto
-- [ ] Frontend mobile-first
+- [x] CRUD básico (viajes, cargas, grupos)
+- [x] Lógica de liquidación/reparto
+- [x] Frontend mobile-first
 - [ ] Deploy
 - [ ] Funcionalidades extra (invitar por link, exportar PDF, multi-vehículo)
 
