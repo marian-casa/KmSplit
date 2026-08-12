@@ -1,0 +1,30 @@
+.onboarding-intro {
+  text-align: center;
+  margin: 64px 0 40px;
+
+  h1 {
+    font-size: 26px;
+    font-weight: 800;
+    color: var(--blue-500);
+    margin: 0 0 16px;
+
+    span {
+      color: var(--gray-900);
+    }
+  }
+}
+
+.onboarding-copy {
+  color: var(--gray-700);
+  font-size: 14px;
+  line-height: 1.6;
+  max-width: 320px;
+  margin: 0 auto;
+}
+
+.onboarding-options {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-top: auto;
+}

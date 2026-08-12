@@ -1,0 +1,27 @@
+.bottom-nav {
+  display: flex;
+  border-top: 1px solid var(--gray-300);
+  background: var(--white);
+  margin: auto -20px -32px;
+  padding: 10px 0;
+}
+
+.nav-item {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 3px;
+  font-size: 10.5px;
+  color: var(--gray-500);
+  text-decoration: none;
+  font-weight: 600;
+
+  &.active {
+    color: var(--blue-500);
+  }
+}
+
+.nav-icon {
+  font-size: 18px;
+}

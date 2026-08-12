@@ -1,0 +1,211 @@
+/* ============================================================
+   Variables de la paleta de colores del repo
+   ============================================================ */
+:root {
+  --blue-900: #12233d;
+  --blue-700: #1c3d63;
+  --blue-500: #2f6fed;
+  --blue-400: #5b8def;
+  --blue-100: #e3ecfd;
+
+  --gray-900: #1f2933;
+  --gray-700: #52606d;
+  --gray-500: #8a97a6;
+  --gray-300: #cbd2d9;
+  --gray-100: #f0f2f5;
+  --white: #ffffff;
+
+  --green: #3fae62;
+  --amber: #e0a344;
+  --red: #e5484d;
+
+  --radius: 14px;
+  --radius-sm: 10px;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  height: 100%;
+}
+
+body {
+  margin: 0;
+  font-family: 'Segoe UI', Roboto, Arial, sans-serif;
+  background: var(--gray-100);
+  color: var(--gray-900);
+  -webkit-font-smoothing: antialiased;
+}
+
+/* Contenedor base de cada pantalla, mobile-first, centrado en desktop */
+.screen {
+  min-height: 100vh;
+  max-width: 480px;
+  margin: 0 auto;
+  padding: 24px 20px 32px;
+  display: flex;
+  flex-direction: column;
+  background: var(--white);
+}
+
+/* Inputs */
+.field {
+  width: 100%;
+  padding: 13px 14px;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--gray-300);
+  background: var(--gray-100);
+  color: var(--gray-900);
+  font-size: 15px;
+  outline: none;
+  transition: border-color 0.15s ease, background 0.15s ease;
+
+  &:focus {
+    border-color: var(--blue-500);
+    background: var(--white);
+  }
+
+  &.has-error {
+    border-color: var(--red);
+  }
+}
+
+.field-error {
+  color: var(--red);
+  font-size: 12.5px;
+  margin: 4px 0 0;
+}
+
+/* Botones */
+.btn {
+  display: block;
+  width: 100%;
+  padding: 14px;
+  border-radius: var(--radius-sm);
+  border: none;
+  background: var(--blue-500);
+  color: var(--white);
+  font-size: 15px;
+  font-weight: 700;
+  text-align: center;
+  cursor: pointer;
+  transition: background 0.15s ease, opacity 0.15s ease;
+
+  &:hover:not(:disabled) {
+    background: var(--blue-400);
+  }
+
+  &:disabled {
+    opacity: 0.55;
+    cursor: not-allowed;
+  }
+}
+
+.btn-secondary {
+  background: var(--white);
+  color: var(--blue-500);
+  border: 1.5px solid var(--blue-500);
+}
+
+/* Links */
+.link {
+  color: var(--blue-500);
+  font-size: 13.5px;
+  text-decoration: none;
+  font-weight: 600;
+  cursor: pointer;
+
+  &:hover {
+    text-decoration: underline;
+  }
+}
+
+/* Separador "o" entre botones */
+.divider {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  color: var(--gray-500);
+  font-size: 11px;
+  margin: 6px 0;
+
+  &::before,
+  &::after {
+    content: '';
+    flex: 1;
+    height: 1px;
+    background: var(--gray-300);
+  }
+}
+
+/* Banner de alerta (ámbar) */
+.banner-alert {
+  background: #fbf1de;
+  border: 1px solid var(--amber);
+  color: #8a5c1a;
+  font-size: 12.5px;
+  padding: 10px 12px;
+  border-radius: var(--radius-sm);
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+}
+
+/* Header repetido: botón volver + título + espaciador para centrar */
+.screen-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 24px;
+
+  h1 {
+    font-size: 20px;
+    font-weight: 800;
+    color: var(--gray-900);
+    margin: 0;
+  }
+}
+
+.icon-btn {
+  width: 32px;
+  height: 32px;
+  border-radius: 10px;
+  background: var(--gray-100);
+  border: none;
+  font-size: 16px;
+  color: var(--gray-700);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.icon-btn-spacer {
+  width: 32px;
+}
+
+.muted {
+  color: var(--gray-500);
+  font-size: 13.5px;
+}
+
+/* Selects, mismo look que .field pero con flecha nativa */
+.select-field {
+  width: 100%;
+  padding: 13px 14px;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--gray-300);
+  background: var(--gray-100);
+  color: var(--gray-900);
+  font-size: 15px;
+  outline: none;
+  transition: border-color 0.15s ease, background 0.15s ease;
+
+  &:focus {
+    border-color: var(--blue-500);
+    background: var(--white);
+  }
+}

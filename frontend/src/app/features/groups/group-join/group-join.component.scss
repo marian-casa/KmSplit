@@ -1,0 +1,12 @@
+.group-form {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.invite-input {
+  text-transform: uppercase;
+  text-align: center;
+  letter-spacing: 0.08em;
+  font-weight: 700;
+}

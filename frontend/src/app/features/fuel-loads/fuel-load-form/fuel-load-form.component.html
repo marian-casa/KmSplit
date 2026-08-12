@@ -1,0 +1,61 @@
+<div class="screen">
+  <div class="screen-header">
+    <button class="icon-btn" type="button" [routerLink]="['/vehiculo', vehicleId]" aria-label="Volver">‹</button>
+    <h1>Registrar carga</h1>
+    <span class="icon-btn-spacer"></span>
+  </div>
+
+  <div class="banner-alert">
+    ⚠️ Recordá ingresar el km completo que muestra el tablero de tu vehículo.
+  </div>
+
+  <form [formGroup]="form" (ngSubmit)="submit()" class="fuel-form">
+    <div>
+      <input class="field" type="date" formControlName="load_date" />
+    </div>
+
+    <div>
+      <input class="field" type="number" formControlName="odometer_km" placeholder="Km del odómetro" />
+      @if (form.controls.odometer_km.invalid && form.controls.odometer_km.touched) {
+        <p class="field-error">Ingresá el km del odómetro.</p>
+      }
+    </div>
+
+    <div>
+      <input
+        class="field"
+        type="number"
+        formControlName="amount"
+        placeholder="Monto total ($)"
+        step="0.01"
+      />
+      @if (form.controls.amount.invalid && form.controls.amount.touched) {
+        <p class="field-error">Ingresá el monto.</p>
+      }
+    </div>
+
+    <div>
+      <input
+        class="field"
+        type="number"
+        formControlName="liters"
+        placeholder="Litros cargados (opcional)"
+        step="0.01"
+      />
+    </div>
+
+    <div class="banner-alert banner-info">
+      ℹ️ Al guardar se calcula el reparto automático desde la última carga.
+    </div>
+
+    @if (errorMessage()) {
+      <p class="field-error">{{ errorMessage() }}</p>
+    }
+
+    <button class="btn" type="submit" [disabled]="loading()">
+      {{ loading() ? 'Guardando...' : 'Guardar carga' }}
+    </button>
+  </form>
+
+  <app-bottom-nav [vehicleId]="vehicleId" />
+</div>

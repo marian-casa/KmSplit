@@ -1,0 +1,87 @@
+<div class="screen">
+  <div class="screen-header">
+    <button class="icon-btn" type="button" [routerLink]="['/vehiculo', vehicleId]" aria-label="Volver">‹</button>
+    <h1>Administración</h1>
+    <span class="icon-btn-spacer"></span>
+  </div>
+
+  @if (loading()) {
+    <p class="muted">Cargando...</p>
+  } @else if (errorMessage()) {
+    <p class="field-error">{{ errorMessage() }}</p>
+  } @else {
+    <div class="section-title">Vehículo</div>
+    <div class="settings-card">
+      <div class="settings-row">
+        <div>
+          <p class="settings-label">Repartir km sin asignar entre todos</p>
+          <p class="muted settings-hint">
+            @if (vehicle()!.split_unassigned_km_all_members) {
+              Activado: los km sin asignar se reparten entre todos los integrantes activos, hayan
+              manejado o no.
+            } @else {
+              Desactivado: los km sin asignar se reparten solo entre quienes manejaron en ese
+              período.
+            }
+          </p>
+        </div>
+        <label class="switch">
+          <input
+            type="checkbox"
+            [checked]="vehicle()!.split_unassigned_km_all_members"
+            (change)="toggleSplit()"
+            [disabled]="savingToggle()"
+          />
+          <span class="switch-slider"></span>
+        </label>
+      </div>
+      @if (toggleSaved()) {
+        <p class="saved-hint">✓ Guardado</p>
+      }
+    </div>
+
+    <div class="section-title">Grupo</div>
+    <div class="settings-card">
+      <p class="settings-label">{{ group()!.name }}</p>
+      <p class="muted">Código de invitación</p>
+      <button class="invite-code-btn" type="button" (click)="copyInviteCode()">
+        {{ group()!.invite_code }}
+        <span class="copy-hint">{{ codeCopied() ? '✓ Copiado' : '📋 Copiar' }}</span>
+      </button>
+    </div>
+
+    <div class="section-title">Integrantes</div>
+    @if (memberActionError()) {
+      <p class="field-error">{{ memberActionError() }}</p>
+    }
+    <div class="members-list">
+      @for (member of group()!.members; track member.id) {
+        <div class="member-row">
+          <div>
+            <p class="member-name">
+              {{ member.user_name }}
+              @if (member.user === currentUserId) {
+                <span class="muted">(vos)</span>
+              }
+            </p>
+            <p class="muted member-email">{{ member.user_email }}</p>
+          </div>
+          <div class="member-actions">
+            <span class="role-badge" [class]="'role-' + member.role">{{ roleLabel(member.role) }}</span>
+            @if (canPromote(member)) {
+              <button class="link" type="button" (click)="changeRole(member, 'admin')">Promover</button>
+            }
+            @if (canDemote(member)) {
+              <button class="link" type="button" (click)="changeRole(member, 'member')">Quitar admin</button>
+            }
+            @if (canRemove(member)) {
+              <button class="link link-danger" type="button" (click)="removeMember(member)">Quitar</button>
+            }
+          </div>
+        </div>
+      }
+    </div>
+  }
+
+  <app-bottom-nav [vehicleId]="vehicleId" />
+</div>

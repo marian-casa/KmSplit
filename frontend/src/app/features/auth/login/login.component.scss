@@ -1,0 +1,42 @@
+.login-logo {
+  text-align: center;
+  margin: 48px 0 32px;
+
+  h1 {
+    font-size: 28px;
+    font-weight: 800;
+    color: var(--blue-500);
+    margin: 0;
+
+    span {
+      color: var(--gray-900);
+    }
+  }
+}
+
+.login-tagline {
+  color: var(--gray-700);
+  font-size: 13px;
+  margin: 6px 0 0;
+}
+
+.login-form {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.forgot-link {
+  align-self: flex-end;
+  margin-top: -6px;
+}
+
+.login-error {
+  text-align: center;
+}
+
+.login-footer {
+  margin-top: auto;
+  padding-top: 32px;
+  text-align: center;
+}

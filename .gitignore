@@ -1,0 +1,31 @@
+# Entornos
+backend/.env
+.env
+
+# Python
+__pycache__/
+*.pyc
+.pytest_cache/
+.coverage
+htmlcov/
+backend/venv/
+backend/db.sqlite3
+
+# Node / Angular
+frontend/node_modules/
+frontend/dist/
+frontend/.angular/
+node_modules/
+frontend/dist/
+frontend/.angular/
+
+# Docker
+*.log
+
+# Editor
+.vscode/
+.idea/
+.DS_Store
+
+# Configuración
+SETUP.md

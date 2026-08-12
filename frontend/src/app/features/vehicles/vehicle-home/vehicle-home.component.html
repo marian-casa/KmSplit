@@ -1,0 +1,54 @@
+<div class="screen">
+  <div class="screen-header">
+    <button class="icon-btn" type="button" routerLink="/vehiculos" aria-label="Volver">‹</button>
+    <h1>{{ vehicle()?.name ?? 'Vehículo' }}</h1>
+    <a class="icon-btn" [routerLink]="['/vehiculo', vehicleId, 'admin']" aria-label="Configuración">⚙</a>
+  </div>
+
+  @if (loading()) {
+    <p class="muted">Cargando...</p>
+  } @else if (errorMessage()) {
+    <p class="field-error">{{ errorMessage() }}</p>
+  } @else {
+    <div class="vehicle-photo">
+      @if (vehicle()!.photo_url) {
+        <img [src]="vehicle()!.photo_url" alt="Foto del vehículo" />
+      } @else {
+        <span class="vehicle-photo-placeholder">🚗<br />Foto del auto (opcional)</span>
+      }
+    </div>
+
+    <p class="muted vehicle-meta">
+      {{ vehicle()!.current_km }} km en la última carga
+      @if (group()) {
+        · {{ group()!.members.length }} integrantes
+      }
+    </p>
+
+    <a class="action-card" [routerLink]="['/vehiculo', vehicleId, 'viaje']">
+      <span class="action-icon">📍</span>
+      <span>
+        <span class="action-title">Registrar Viaje</span>
+        <span class="action-subtitle">Cargar km de hoy</span>
+      </span>
+    </a>
+
+    <a class="action-card" [routerLink]="['/vehiculo', vehicleId, 'carga']">
+      <span class="action-icon">⛽</span>
+      <span>
+        <span class="action-title">Registrar Carga</span>
+        <span class="action-subtitle">¿Cargaste combustible?</span>
+      </span>
+    </a>
+
+    <a class="action-card" [routerLink]="['/vehiculo', vehicleId, 'resumen']">
+      <span class="action-icon">📊</span>
+      <span>
+        <span class="action-title">Resumen</span>
+        <span class="action-subtitle">Gastos y reparto</span>
+      </span>
+    </a>
+  }
+
+  <app-bottom-nav [vehicleId]="vehicleId" />
+</div>

@@ -1,0 +1,83 @@
+<div class="screen">
+  <div class="screen-header">
+    <button class="icon-btn" type="button" [routerLink]="['/vehiculo', vehicleId]" aria-label="Volver">‹</button>
+    <h1>{{ editingTripId() ? 'Editar viaje' : 'Registrar viaje' }}</h1>
+    <span class="icon-btn-spacer"></span>
+  </div>
+
+  @if (loadingContext()) {
+    <p class="muted">Cargando...</p>
+  } @else {
+    <p class="registering-as">Registrando como <strong>{{ userName() }}</strong></p>
+
+    @if (lastOwnTrip() && !editingTripId()) {
+      <button class="last-trip-card" type="button" (click)="editLastTrip()">
+        <span class="muted">
+          Tu último registro: {{ lastOwnTrip()!.trip_date }} · {{ lastOwnTrip()!.km_traveled }} km
+        </span>
+        <span class="link">✏️ Editar</span>
+      </button>
+    }
+
+    <form (ngSubmit)="submit()" [formGroup]="form" class="trip-form">
+      <div>
+        <input class="field" type="date" formControlName="trip_date" />
+      </div>
+
+      <div>
+        <input class="field" type="number" formControlName="start_km" placeholder="Km inicial" />
+        <p class="field-hint">
+          Se completa solo con tu último registro, pero podés cambiarlo si
+          estás cargando viajes de otro día.
+        </p>
+        @if (form.controls.start_km.invalid && form.controls.start_km.touched) {
+          <p class="field-error">Ingresá el km inicial.</p>
+        }
+      </div>
+
+      @if (useShortcut()) {
+        <div>
+          <input
+            class="field"
+            type="text"
+            inputmode="numeric"
+            formControlName="end_km_shortcut"
+            placeholder="Últimos dígitos del odómetro"
+            maxlength="3"
+          />
+          <p class="field-hint">
+            Escribí solo los dígitos que cambiaron. Ej: de <strong>…222</strong> a
+            <strong>…230</strong>, escribí <strong>30</strong>; de <strong>…2</strong> a
+            <strong>…9</strong>, escribí <strong>9</strong>.
+          </p>
+        </div>
+        <a class="link" (click)="toggleShortcut()">¿Viaje largo? Ingresá el km completo</a>
+      } @else {
+        <div>
+          <input
+            class="field"
+            type="number"
+            formControlName="end_km_full"
+            placeholder="Km final completo"
+          />
+        </div>
+        <a class="link" (click)="toggleShortcut()">Volver al atajo rápido</a>
+      }
+
+      <div class="km-result">
+        <p class="muted">Km recorridos</p>
+        <p class="km-result-value">{{ kmTraveled ?? '—' }} Km</p>
+      </div>
+
+      @if (errorMessage()) {
+        <p class="field-error">{{ errorMessage() }}</p>
+      }
+
+      <button class="btn" type="submit" [disabled]="loading()">
+        {{ loading() ? 'Guardando...' : 'Guardar viaje' }}
+      </button>
+    </form>
+  }
+
+  <app-bottom-nav [vehicleId]="vehicleId" />
+</div>

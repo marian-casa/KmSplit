@@ -1,0 +1,23 @@
+<nav class="bottom-nav">
+  <a
+    class="nav-item"
+    [routerLink]="['/vehiculo', vehicleId]"
+    routerLinkActive="active"
+    [routerLinkActiveOptions]="{ exact: true }"
+  >
+    <span class="nav-icon">🏠</span>
+    <span>Inicio</span>
+  </a>
+  <a class="nav-item" [routerLink]="['/vehiculo', vehicleId, 'viaje']" routerLinkActive="active">
+    <span class="nav-icon">📍</span>
+    <span>Viaje</span>
+  </a>
+  <a class="nav-item" [routerLink]="['/vehiculo', vehicleId, 'carga']" routerLinkActive="active">
+    <span class="nav-icon">⛽</span>
+    <span>Carga</span>
+  </a>
+  <a class="nav-item" [routerLink]="['/vehiculo', vehicleId, 'resumen']" routerLinkActive="active">
+    <span class="nav-icon">📊</span>
+    <span>Resumen</span>
+  </a>
+</nav>

@@ -21,37 +21,45 @@ KmSplit digitaliza y automatiza ese proceso, ofreciendo:
 
 ## Funcionalidades (MVP)
 
-- [ ] Registro y login de usuarios
-- [ ] Creación de grupos (familia/convivientes) y vehículo asociado
-- [ ] Carga de viajes diarios (usuario, km inicial, km final)
-- [ ] Carga de combustible (fecha, km del odómetro, monto total)
-- [ ] Cálculo automático de liquidación/reparto entre cargas
-- [ ] Dashboard con historial y gráficos de gasto por persona
-- [ ] Diseño responsive, mobile-first
+- [x] Registro y login de usuarios
+- [x] Creación de grupos (familia/convivientes) y vehículo asociado
+- [x] Carga de viajes diarios (usuario, km inicial, km final)
+- [x] Carga de combustible (fecha, km del odómetro, monto total)
+- [x] Cálculo automático de liquidación/reparto entre cargas
+- [x] Dashboard con historial y gráficos de gasto por persona
+- [x] Diseño responsive, mobile-first
 
 ## Stack tecnológico
 
 **Backend:** Django + Django REST Framework, PostgreSQL    
-**Frontend:** Angular, Html, Css, Tailwind    
+**Frontend:** Angular, Html, Scss, Tailwind    
 **Diseño:** Figma    
 **Infraestructura:** Docker, Docker Compose    
 **Deploy:** Vercel    
 
-## 📂 Estructura del proyecto
+## 📂 Estructura del proyecto  
 
-kmsplit/    
-├── backend/          # API Django REST Framework    
-├── frontend/         # App Angular    
-├── docker-compose.yml    
-└── README.md    
-
-
-
-
-
-
-
-
+```text
+KmSplit/
+├── backend/                  # API Django REST Framework
+│   ├── accounts/             # Autenticación y usuarios
+│   ├── core/                 # Lógica principal de la aplicación
+│   ├── config/               # Configuración de Django
+│   ├── manage.py
+│   └── requirements.txt
+│
+├── frontend/                 # Aplicación Angular
+│   ├── src/
+│   │   └── app/
+│   │       ├── core/         # Guards, interceptores, modelos y servicios
+│   │       ├── features/    # Funcionalidades principales
+│   │       └── shared/      # Componentes reutilizables
+│   ├── angular.json
+│   └── package.json
+│
+├── docker-compose.yml        # Orquestación de los servicios
+└── README.md                 # Documentación del proyecto
+```
 ## 📸 Capturas / Demo
 
 > Se agregarán capturas de pantalla de todo el avance del proyecto, como los diagramas de flujo, capturas de los wireframes y el modelo relacional de la base de datos en esta primera estapa.        
@@ -166,9 +174,9 @@ Link al Diagrama del Modelo Relacional: https://dbdiagram.io/d/KmSplit-6a5079094
 - [x] Definición del proyecto y modelo de datos
 - [x] Wireframes mobile-first
 - [x] Modelos y lógica de backend
-- [ ] CRUD básico (viajes, cargas, grupos)
-- [ ] Lógica de liquidación/reparto
-- [ ] Frontend mobile-first
+- [x] CRUD básico (viajes, cargas, grupos)
+- [x] Lógica de liquidación/reparto
+- [x] Frontend mobile-first
 - [ ] Deploy
 - [ ] Funcionalidades extra (invitar por link, exportar PDF, multi-vehículo)
 

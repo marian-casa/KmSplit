@@ -1,0 +1,40 @@
+.auth-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 28px;
+
+  h1 {
+    font-size: 20px;
+    font-weight: 800;
+    color: var(--gray-900);
+    margin: 0;
+  }
+}
+
+.icon-btn {
+  width: 32px;
+  height: 32px;
+  border-radius: 10px;
+  background: var(--gray-100);
+  border: none;
+  font-size: 16px;
+  color: var(--gray-700);
+  cursor: pointer;
+}
+
+.icon-btn-spacer {
+  width: 32px;
+}
+
+.auth-form {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.auth-footer {
+  margin-top: auto;
+  padding-top: 32px;
+  text-align: center;
+}
