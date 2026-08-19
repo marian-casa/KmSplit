@@ -1,9 +1,16 @@
 .bottom-nav {
+  position: fixed;
+  bottom: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 100%;
+  max-width: 480px;
+  z-index: 10;
   display: flex;
   border-top: 1px solid var(--gray-300);
   background: var(--white);
-  margin: auto -20px -32px;
   padding: 10px 0;
+  padding-bottom: max(10px, env(safe-area-inset-bottom));
 }
 
 .nav-item {

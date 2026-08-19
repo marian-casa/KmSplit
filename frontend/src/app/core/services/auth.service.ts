@@ -45,10 +45,17 @@ export class AuthService {
       .pipe(tap((user) => this.currentUserSubject.next(user)));
   }
 
-  refresh(): Observable<{ access: string }> {
+  /**
+   * IMPORTANTE: el backend ahora tiene ROTATE_REFRESH_TOKENS activado --
+   * cada refresh devuelve un access Y un refresh nuevos, e invalida el
+   * refresh viejo. Por eso acá hay que guardar los dos, no solo el access
+   * como antes. Si solo guardás el access, el próximo refresh va a fallar
+   * porque el refresh token que tenés guardado ya fue invalidado.
+   */
+  refresh(): Observable<TokenResponse> {
     return this.http
-      .post<{ access: string }>(`${this.baseUrl}/refresh/`, { refresh: this.refreshToken })
-      .pipe(tap(({ access }) => localStorage.setItem(ACCESS_TOKEN_KEY, access)));
+      .post<TokenResponse>(`${this.baseUrl}/refresh/`, { refresh: this.refreshToken })
+      .pipe(tap((tokens) => this.storeTokens(tokens)));
   }
 
   logout(): void {

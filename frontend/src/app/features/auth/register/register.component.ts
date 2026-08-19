@@ -74,9 +74,15 @@ export class RegisterComponent {
       },
       error: (err) => {
         this.loading.set(false);
-        this.errorMessage.set(
-          err.error?.email?.[0] ?? 'No pudimos crear la cuenta. Revisá los datos.',
-        );
+
+        const passwordErrors = err.error?.password;
+        if (passwordErrors?.length) {
+          this.errorMessage.set(passwordErrors.join(' '));
+        } else {
+          this.errorMessage.set(
+            err.error?.email?.[0] ?? 'No pudimos crear la cuenta. Revisá los datos.',
+          );
+        }
       },
     });
   }

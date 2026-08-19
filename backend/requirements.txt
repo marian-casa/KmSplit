@@ -6,3 +6,4 @@ django-cors-headers==4.6.0
 djangorestframework-simplejwt==5.4.0
 pytest==8.3.4
 pytest-django==4.9.0
+django-csp==3.8

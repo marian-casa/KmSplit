@@ -1,7 +1,9 @@
 import { CommonModule } from '@angular/common';
-import { Component, inject, signal } from '@angular/core';
+import { Component, DestroyRef, inject, signal } from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { Router, RouterLink } from '@angular/router';
+import { interval, take } from 'rxjs';
 
 import { AuthService } from '../../../core/services/auth.service';
 
@@ -16,9 +18,11 @@ export class LoginComponent {
   private fb = inject(FormBuilder);
   private auth = inject(AuthService);
   private router = inject(Router);
+  private destroyRef = inject(DestroyRef);
 
   loading = signal(false);
   errorMessage = signal<string | null>(null);
+  lockoutSeconds = signal<number | null>(null);
 
   form = this.fb.nonNullable.group({
     email: ['', [Validators.required, Validators.email]],
@@ -47,10 +51,41 @@ export class LoginComponent {
           },
         });
       },
-      error: () => {
+      error: (err) => {
         this.loading.set(false);
-        this.errorMessage.set('Email o contraseña incorrectos.');
+
+        if (err.status === 429) {
+          const seconds = err.error?.retry_after_seconds ?? 60;
+          this.startLockoutCountdown(seconds);
+        } else {
+          this.errorMessage.set('Email o contraseña incorrectos.');
+        }
       },
     });
+  }
+
+  formattedLockout(): string {
+    const s = this.lockoutSeconds();
+    if (s === null) return '';
+    const minutes = Math.floor(s / 60);
+    const seconds = s % 60;
+    return `${minutes}:${seconds.toString().padStart(2, '0')}`;
+  }
+
+  private startLockoutCountdown(seconds: number): void {
+    this.errorMessage.set(null);
+    this.lockoutSeconds.set(seconds);
+
+    interval(1000)
+      .pipe(take(seconds), takeUntilDestroyed(this.destroyRef))
+      .subscribe({
+        next: () => {
+          const current = this.lockoutSeconds();
+          if (current !== null && current > 0) {
+            this.lockoutSeconds.set(current - 1);
+          }
+        },
+        complete: () => this.lockoutSeconds.set(null),
+      });
   }
 }

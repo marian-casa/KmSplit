@@ -209,3 +209,6 @@ body {
     background: var(--white);
   }
 }
+.screen:has(app-bottom-nav) {
+  padding-bottom: 90px;
+}
