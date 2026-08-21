@@ -6,10 +6,16 @@ import { catchError, switchMap, throwError } from 'rxjs';
 import { AuthService } from '../services/auth.service';
 
 /**
- * Agrega "Authorization: Bearer <token>" a cada request (salvo login/register).
- * Si el backend responde 401 (access token vencido), intenta renovarlo UNA
- * vez con el refresh token y reintenta la request original. Si el refresh
- * también falla, cierra la sesión y manda al login.
+ * Agrega "Authorization: Bearer <token>" a cada request (salvo
+ * login/register), y "withCredentials: true" a TODOS -- esto último es lo
+ * que hace que el navegador mande la cookie httpOnly del refresh token en
+ * /auth/refresh y /auth/logout (en el resto de los endpoints la cookie
+ * tiene path=/api/auth/, así que ni se manda).
+ *
+ * Si el backend responde 401 (access token vencido), intenta renovarlo con
+ * /auth/refresh (que usa la cookie, no necesita nada de acá) y reintenta
+ * la request original. Si el refresh también falla, cierra la sesión y
+ * manda al login.
  */
 export const authInterceptor: HttpInterceptorFn = (req, next) => {
   const auth = inject(AuthService);
@@ -19,24 +25,26 @@ export const authInterceptor: HttpInterceptorFn = (req, next) => {
   const isRefreshEndpoint = req.url.includes('/auth/refresh');
   const token = auth.accessToken;
 
-  const authReq =
-    token && !isAuthEndpoint
-      ? req.clone({ setHeaders: { Authorization: `Bearer ${token}` } })
-      : req;
+  let authReq = req.clone({ withCredentials: true });
+  if (token && !isAuthEndpoint) {
+    authReq = authReq.clone({ setHeaders: { Authorization: `Bearer ${token}` } });
+  }
 
   return next(authReq).pipe(
     catchError((error: HttpErrorResponse) => {
-      const shouldTryRefresh =
-        error.status === 401 && auth.refreshToken && !isAuthEndpoint && !isRefreshEndpoint;
+      const shouldTryRefresh = error.status === 401 && !isAuthEndpoint && !isRefreshEndpoint;
 
       if (shouldTryRefresh) {
         return auth.refresh().pipe(
           switchMap(({ access }) => {
-            const retryReq = req.clone({ setHeaders: { Authorization: `Bearer ${access}` } });
+            const retryReq = req.clone({
+              withCredentials: true,
+              setHeaders: { Authorization: `Bearer ${access}` },
+            });
             return next(retryReq);
           }),
           catchError((refreshError) => {
-            auth.logout();
+            auth.logout().subscribe();
             router.navigate(['/login']);
             return throwError(() => refreshError);
           }),

@@ -121,6 +121,8 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 CORS_ALLOWED_ORIGINS = config('CORS_ALLOWED_ORIGINS').split (',')
 ALLOWED_HOSTS = config('ALLOWED_HOSTS').split(',')
+COOKIE_SECURE = config('COOKIE_SECURE', default=not DEBUG, cast=bool)
+CORS_ALLOW_CREDENTIALS = True
 
 
 REST_FRAMEWORK = {

@@ -78,3 +78,42 @@ class TestPasswordValidation:
             {"name": "Test", "email": "strongpass@test.com", "password": "Xk9$mQ2vRp8Lw"},
         )
         assert response.status_code == 201
+
+class TestCookieBasedRefresh:
+    def test_login_sets_httponly_refresh_cookie_and_omits_it_from_body(self, test_user):
+        client = APIClient()
+        response = client.post(
+            "/api/auth/login/", {"email": test_user.email, "password": "testpass123"}
+        )
+
+        assert response.status_code == 200
+        assert "access" in response.data
+        assert "refresh" not in response.data  # ya no viaja en el JSON
+
+        cookie = response.cookies.get("kmsplit_refresh")
+        assert cookie is not None
+        assert cookie["httponly"] is True
+
+    def test_refresh_works_using_cookie_without_sending_a_body(self, test_user):
+        client = APIClient()
+        client.post("/api/auth/login/", {"email": test_user.email, "password": "testpass123"})
+
+        response = client.post("/api/auth/refresh/")
+        assert response.status_code == 200
+        assert "access" in response.data
+
+    def test_refresh_fails_without_any_cookie(self):
+        client = APIClient()
+        response = client.post("/api/auth/refresh/")
+        assert response.status_code == 401
+
+    def test_logout_invalidates_the_session(self, test_user):
+        client = APIClient()
+        client.post("/api/auth/login/", {"email": test_user.email, "password": "testpass123"})
+
+        logout_response = client.post("/api/auth/logout/")
+        assert logout_response.status_code == 200
+
+        # después del logout, ya no debería poder refrescar con ese cliente
+        refresh_response = client.post("/api/auth/refresh/")
+        assert refresh_response.status_code == 401
