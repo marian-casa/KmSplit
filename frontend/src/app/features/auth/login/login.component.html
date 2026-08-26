@@ -37,8 +37,20 @@
       <p class="field-error login-error">{{ errorMessage() }}</p>
     }
 
-    <button class="btn" type="submit" [disabled]="loading()">
-      {{ loading() ? 'Ingresando...' : 'Iniciar sesión' }}
+    @if (lockoutSeconds() !== null) {
+      <p class="lockout-message">
+        🔒 Demasiados intentos fallidos. Probá de nuevo en {{ formattedLockout() }}.
+      </p>
+    }
+
+    <button class="btn" type="submit" [disabled]="loading() || lockoutSeconds() !== null">
+      @if (lockoutSeconds() !== null) {
+        Bloqueado ({{ formattedLockout() }})
+      } @else if (loading()) {
+        Ingresando...
+      } @else {
+        Iniciar sesión
+      }
     </button>
   </form>
 

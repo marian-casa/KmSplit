@@ -9,7 +9,6 @@ export interface RegisterRequest {
   password: string;
 }
 
-export interface TokenResponse {
+export interface AccessTokenResponse {
   access: string;
-  refresh: string;
 }

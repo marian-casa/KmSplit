@@ -25,7 +25,8 @@ export class VehicleSelectComponent {
   errorMessage = signal<string | null>(null);
 
   constructor() {
-    // un usuario nuevo sin grupo todavía no puede ver/crear vehículos -> se lo manda primero a crear o unirse a un grupo
+    // un usuario nuevo sin grupo todavía no puede ver/crear vehículos ->
+    // lo mandamos primero a crear o unirse a un grupo
     this.groupService.list().subscribe({
       next: (groups) => {
         if (groups.length === 0) {
@@ -55,7 +56,11 @@ export class VehicleSelectComponent {
   }
 
   logout(): void {
-    this.auth.logout();
-    this.router.navigate(['/login']);
+    // logout() ahora llama al backend (para invalidar la cookie httpOnly
+    // del refresh token), así que hay que esperar la respuesta antes de
+    // navegar -- ya no es una limpieza sincrónica de localStorage nomás.
+    this.auth.logout().subscribe(() => {
+      this.router.navigate(['/login']);
+    });
   }
 }

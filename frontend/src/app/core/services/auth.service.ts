@@ -1,13 +1,13 @@
 import { HttpClient } from '@angular/common/http';
 import { Injectable, inject } from '@angular/core';
-import { BehaviorSubject, Observable, tap } from 'rxjs';
+import { BehaviorSubject, Observable, catchError, of, tap } from 'rxjs';
 
 import { environment } from '../../../environments/environment';
-import { LoginRequest, RegisterRequest, TokenResponse } from '../models/auth.model';
+import { AccessTokenResponse, LoginRequest, RegisterRequest } from '../models/auth.model';
 import { User } from '../models/user.model';
 
 const ACCESS_TOKEN_KEY = 'kmsplit_access_token';
-const REFRESH_TOKEN_KEY = 'kmsplit_refresh_token';
+const LEGACY_REFRESH_TOKEN_KEY = 'kmsplit_refresh_token'; // ya no se usa, ver constructor
 
 @Injectable({ providedIn: 'root' })
 export class AuthService {
@@ -17,22 +17,27 @@ export class AuthService {
   private currentUserSubject = new BehaviorSubject<User | null>(null);
   currentUser$ = this.currentUserSubject.asObservable();
 
-  get accessToken(): string | null {
-    return localStorage.getItem(ACCESS_TOKEN_KEY);
+  constructor() {
+    // Limpieza de una sola vez: versiones anteriores de la app guardaban
+    // el refresh token en localStorage bajo esta clave. Ahora vive en una
+    // cookie httpOnly (ver core/interceptors/auth.interceptor.ts), así que
+    // si quedó un valor viejo dando vueltas de antes de este cambio, lo
+    // borramos apenas arranca el servicio.
+    localStorage.removeItem(LEGACY_REFRESH_TOKEN_KEY);
   }
 
-  get refreshToken(): string | null {
-    return localStorage.getItem(REFRESH_TOKEN_KEY);
+  get accessToken(): string | null {
+    return localStorage.getItem(ACCESS_TOKEN_KEY);
   }
 
   isAuthenticated(): boolean {
     return !!this.accessToken;
   }
 
-  login(payload: LoginRequest): Observable<TokenResponse> {
+  login(payload: LoginRequest): Observable<AccessTokenResponse> {
     return this.http
-      .post<TokenResponse>(`${this.baseUrl}/login/`, payload)
-      .pipe(tap((tokens) => this.storeTokens(tokens)));
+      .post<AccessTokenResponse>(`${this.baseUrl}/login/`, payload)
+      .pipe(tap(({ access }) => localStorage.setItem(ACCESS_TOKEN_KEY, access)));
   }
 
   register(payload: RegisterRequest): Observable<User> {
@@ -45,20 +50,24 @@ export class AuthService {
       .pipe(tap((user) => this.currentUserSubject.next(user)));
   }
 
-  refresh(): Observable<{ access: string }> {
+  refresh(): Observable<AccessTokenResponse> {
     return this.http
-      .post<{ access: string }>(`${this.baseUrl}/refresh/`, { refresh: this.refreshToken })
+      .post<AccessTokenResponse>(`${this.baseUrl}/refresh/`, {})
       .pipe(tap(({ access }) => localStorage.setItem(ACCESS_TOKEN_KEY, access)));
   }
 
-  logout(): void {
-    localStorage.removeItem(ACCESS_TOKEN_KEY);
-    localStorage.removeItem(REFRESH_TOKEN_KEY);
-    this.currentUserSubject.next(null);
+  logout(): Observable<unknown> {
+    return this.http.post(`${this.baseUrl}/logout/`, {}).pipe(
+      tap(() => this.clearLocalSession()),
+      catchError(() => {
+        this.clearLocalSession();
+        return of(null);
+      }),
+    );
   }
 
-  private storeTokens(tokens: TokenResponse): void {
-    localStorage.setItem(ACCESS_TOKEN_KEY, tokens.access);
-    localStorage.setItem(REFRESH_TOKEN_KEY, tokens.refresh);
+  private clearLocalSession(): void {
+    localStorage.removeItem(ACCESS_TOKEN_KEY);
+    this.currentUserSubject.next(null);
   }
 }
