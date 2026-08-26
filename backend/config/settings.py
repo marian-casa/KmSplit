@@ -32,6 +32,7 @@ MIDDLEWARE = [
     'corsheaders.middleware.CorsMiddleware',
     'csp.middleware.CSPMiddleware',
     'django.middleware.security.SecurityMiddleware',
+    'whitenoise.middleware.WhiteNoiseMiddleware', 
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
@@ -66,17 +67,14 @@ WSGI_APPLICATION = 'config.wsgi.application'
 
 from decouple import config
 
-DATABASES = {
-    'default': {
-        'ENGINE': 'django.db.backends.postgresql',
-        'NAME': config('POSTGRES_DB'),
-        'USER': config('POSTGRES_USER'),
-        'PASSWORD': config('POSTGRES_PASSWORD'),
-        'HOST': config('POSTGRES_HOST'),
-        'PORT': config('POSTGRES_PORT'),
-    }
-}
+import dj_database_url
 
+DATABASES = {
+    'default': dj_database_url.config(
+        default=config('DATABASE_URL'),
+        conn_max_age=600,
+    )
+}
 
 # Password validation
 # https://docs.djangoproject.com/en/5.1/ref/settings/#auth-password-validators
@@ -114,6 +112,12 @@ USE_TZ = True
 
 STATIC_URL = 'static/'
 
+STATIC_ROOT = BASE_DIR / 'staticfiles'
+STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
+
+_csrf_trusted = config('CSRF_TRUSTED_ORIGINS', default='')
+CSRF_TRUSTED_ORIGINS = _csrf_trusted.split(',') if _csrf_trusted else []
+
 # Default primary key field type
 # https://docs.djangoproject.com/en/5.1/ref/settings/#default-auto-field
 
@@ -121,7 +125,8 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 CORS_ALLOWED_ORIGINS = config('CORS_ALLOWED_ORIGINS').split (',')
 ALLOWED_HOSTS = config('ALLOWED_HOSTS').split(',')
-COOKIE_SECURE = config('COOKIE_SECURE', default=not DEBUG, cast=bool)
+ENVIRONMENT = config('ENVIRONMENT', default='development')
+COOKIE_SECURE = config('COOKIE_SECURE', default=(ENVIRONMENT == 'production'), cast=bool)
 CORS_ALLOW_CREDENTIALS = True
 
 
@@ -157,3 +162,9 @@ CSP_SCRIPT_SRC = ("'self'",)
 CSP_STYLE_SRC = ("'self'", "'unsafe-inline'")  # la API navegable de DRF usa algo de CSS inline
 CSP_IMG_SRC = ("'self'", "data:")
 CSP_FONT_SRC = ("'self'",)
+
+if ENVIRONMENT == 'production':
+    SECURE_SSL_REDIRECT = True
+    SESSION_COOKIE_SECURE = True
+    CSRF_COOKIE_SECURE = True
+    SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
