@@ -26,7 +26,7 @@ def _set_refresh_cookie(response, refresh_token: str) -> None:
         max_age=int(settings.SIMPLE_JWT["REFRESH_TOKEN_LIFETIME"].total_seconds()),
         httponly=True,
         secure=settings.COOKIE_SECURE,
-        samesite="Lax",
+        samesite=settings.COOKIE_SAMESITE,
         path="/api/auth/",
     )
 
