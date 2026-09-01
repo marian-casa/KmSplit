@@ -1,5 +1,5 @@
 # KmSplit 🚗⛽
-
+🔗 **[Ver la app en vivo](https://kmsplit.vercel.app/login)**
 > Reparto justo del gasto de combustible en autos compartidos, proporcional a los km recorridos por cada persona.
 
 ## Descripción
@@ -35,7 +35,8 @@ KmSplit digitaliza y automatiza ese proceso, ofreciendo:
 **Frontend:** Angular, Html, Scss, Tailwind    
 **Diseño:** Figma    
 **Infraestructura:** Docker, Docker Compose    
-**Deploy:** Vercel    
+**Deploy:** Backend en Railway, Frontend en Vercel, CI/CD automático
+desde GitHub (cada push a `main` deploya solo).  
 
 ## 📂 Estructura del proyecto  
 

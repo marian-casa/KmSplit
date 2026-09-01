@@ -19,16 +19,16 @@
   } @else if (settlement()) {
     <div class="settlement-summary">
       <p class="muted">Período</p>
-      <p class="settlement-period">{{ settlement()!.period_start_km }} — {{ settlement()!.period_end_km }} km</p>
+      <p class="settlement-period">{{ settlement()!.period_start_km | argNumber }} — {{ settlement()!.period_end_km | argNumber }} km</p>
 
       <div class="summary-grid">
         <div>
           <p class="muted">Monto total</p>
-          <p class="summary-value">${{ settlement()!.total_amount }}</p>
+          <p class="summary-value">${{ settlement()!.total_amount | argNumber: 'money' }}</p>
         </div>
         <div>
           <p class="muted">Km sin asignar</p>
-          <p class="summary-value">{{ settlement()!.unassigned_km }} km</p>
+          <p class="summary-value">{{ settlement()!.unassigned_km | argNumber }} km</p>
         </div>
       </div>
 
@@ -50,14 +50,14 @@
         <div class="detail-row">
           <div class="detail-header">
             <span class="detail-name">{{ detail.user_name }}</span>
-            <span class="detail-amount">${{ detail.amount_owed }}</span>
+            <span class="detail-amount">${{ detail.amount_owed | argNumber: 'money' }}</span>
           </div>
           <p class="muted detail-breakdown">
-            {{ detail.registered_km }} km propios
+            {{ detail.registered_km | argNumber }} km propios
             @if (detail.unassigned_km_share > 0) {
-              + {{ detail.unassigned_km_share }} km del reparto equitativo
+              + {{ detail.unassigned_km_share | argNumber: 'decimal' }} km del reparto equitativo
             }
-            = {{ detail.km_driven }} km ({{ detail.percentage }}%)
+            = {{ detail.km_driven | argNumber: 'decimal' }} km ({{ detail.percentage | argNumber: 'decimal' }}%)
           </p>
         </div>
       }

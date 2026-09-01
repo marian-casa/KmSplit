@@ -7,11 +7,12 @@ import { Vehicle } from '../../../core/models/vehicle.model';
 import { GroupService } from '../../../core/services/group.service';
 import { VehicleService } from '../../../core/services/vehicle.service';
 import { BottomNavComponent } from '../../../shared/bottom-nav/bottom-nav.component';
+import { ArgNumberPipe } from '../../../shared/pipes/arg-number.pipe';
 
 @Component({
   selector: 'app-vehicle-home',
   standalone: true,
-  imports: [CommonModule, RouterLink, BottomNavComponent],
+  imports: [CommonModule, RouterLink, BottomNavComponent, ArgNumberPipe],
   templateUrl: './vehicle-home.component.html',
   styleUrl: './vehicle-home.component.scss',
 })

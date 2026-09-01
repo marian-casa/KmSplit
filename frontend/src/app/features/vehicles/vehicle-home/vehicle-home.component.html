@@ -19,7 +19,7 @@
     </div>
 
     <p class="muted vehicle-meta">
-      {{ vehicle()!.current_km }} km en la última carga
+      {{ vehicle()!.current_km | argNumber }} km en la última carga
       @if (group()) {
         · {{ group()!.members.length }} integrantes
       }

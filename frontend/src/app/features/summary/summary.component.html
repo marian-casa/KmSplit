@@ -12,7 +12,7 @@
   } @else {
     @if (latestSettlement && latestSettlement.unassigned_km > 0) {
       <div class="banner-alert">
-        ⚠️ Hay {{ latestSettlement.unassigned_km }} km sin asignar en la última liquidación
+        ⚠️ Hay {{ latestSettlement.unassigned_km | argNumber }} km sin asignar en la última liquidación
       </div>
     }
 

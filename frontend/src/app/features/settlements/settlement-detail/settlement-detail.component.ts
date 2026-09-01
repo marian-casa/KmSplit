@@ -8,11 +8,12 @@ import { GroupService } from '../../../core/services/group.service';
 import { SettlementService } from '../../../core/services/settlement.service';
 import { VehicleService } from '../../../core/services/vehicle.service';
 import { BottomNavComponent } from '../../../shared/bottom-nav/bottom-nav.component';
+import { ArgNumberPipe } from '../../../shared/pipes/arg-number.pipe';
 
 @Component({
   selector: 'app-settlement-detail',
   standalone: true,
-  imports: [CommonModule, RouterLink, BottomNavComponent],
+  imports: [CommonModule, RouterLink, BottomNavComponent, ArgNumberPipe],
   templateUrl: './settlement-detail.component.html',
   styleUrl: './settlement-detail.component.scss',
 })

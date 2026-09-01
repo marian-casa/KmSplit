@@ -128,7 +128,10 @@ ALLOWED_HOSTS = config('ALLOWED_HOSTS').split(',')
 ENVIRONMENT = config('ENVIRONMENT', default='development')
 COOKIE_SECURE = config('COOKIE_SECURE', default=(ENVIRONMENT == 'production'), cast=bool)
 CORS_ALLOW_CREDENTIALS = True
-
+COOKIE_SAMESITE = config(
+    'COOKIE_SAMESITE',
+    default=('None' if ENVIRONMENT == 'production' else 'Lax'),
+)
 
 REST_FRAMEWORK = {
     "DEFAULT_AUTHENTICATION_CLASSES": (
