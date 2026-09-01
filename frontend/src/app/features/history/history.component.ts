@@ -15,6 +15,8 @@ import { SettlementService } from '../../core/services/settlement.service';
 import { TripService } from '../../core/services/trip.service';
 import { VehicleService } from '../../core/services/vehicle.service';
 import { BottomNavComponent } from '../../shared/bottom-nav/bottom-nav.component';
+import { ArgNumberPipe } from '../../shared/pipes/arg-number.pipe';
+import { formatKm, formatMoney } from '../../core/utils/format-args';
 
 type FilterKey = 'todos' | 'viajes' | 'cargas';
 
@@ -44,7 +46,7 @@ interface KmGap {
 @Component({
   selector: 'app-history',
   standalone: true,
-  imports: [CommonModule, RouterLink, BottomNavComponent],
+  imports: [CommonModule, RouterLink, BottomNavComponent, ArgNumberPipe],
   templateUrl: './history.component.html',
   styleUrl: './history.component.scss',
 })
@@ -129,7 +131,7 @@ export class HistoryComponent {
         type: 'trip' as const,
         userName: this.memberName(t.user),
         userId: t.user,
-        label: `${t.start_km} → ${t.end_km}  Total: ${t.km_traveled} km`,
+        label: `${formatKm(t.start_km)} → ${formatKm(t.end_km)}  Total: ${formatKm(t.km_traveled)} km`,
         tripId: t.id,
         clickable: canEditAny || t.user === this.currentUserId,
       }));
@@ -144,8 +146,8 @@ export class HistoryComponent {
           sortKey: `${f.load_date}-${String(f.id).padStart(6, '0')}`,
           type: 'fuel' as const,
           userName: this.memberName(f.loaded_by),
-          userId: f.loaded_by,
-          label: `$${f.amount}`,
+        userId: f.loaded_by,
+        label: `$${formatMoney(f.amount)}`,
           settlementId,
           clickable: !!settlementId,
         };
@@ -211,11 +213,11 @@ export class HistoryComponent {
             gapEndKm: trip.start_km,
             gapSize: trip.start_km - cursor,
             beforeLabel: lastTripLabel ?? 'el inicio del período',
-            afterLabel: `${this.memberName(trip.user)} (arranca en ${trip.start_km} km)`,
+            afterLabel: `${this.memberName(trip.user)} (arranca en ${formatKm(trip.start_km)} km)`,
           });
         }
         cursor = Math.max(cursor, trip.end_km);
-        lastTripLabel = `${this.memberName(trip.user)} (hasta ${trip.end_km} km)`;
+        lastTripLabel = `${this.memberName(trip.user)} (hasta ${formatKm(trip.end_km)} km)`;
       }
 
       if (period.end !== null && cursor < period.end) {

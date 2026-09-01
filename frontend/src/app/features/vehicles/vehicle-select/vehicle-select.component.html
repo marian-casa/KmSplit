@@ -17,7 +17,7 @@
           <div class="vehicle-avatar">🚗</div>
           <div>
             <p class="vehicle-name">{{ vehicle.name }}</p>
-            <p class="muted">{{ vehicle.current_km }} km actuales</p>
+            <p class="muted">{{ vehicle.current_km | argNumber }} km actuales</p>
           </div>
         </a>
       }

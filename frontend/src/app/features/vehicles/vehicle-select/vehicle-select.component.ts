@@ -6,11 +6,12 @@ import { Vehicle } from '../../../core/models/vehicle.model';
 import { AuthService } from '../../../core/services/auth.service';
 import { GroupService } from '../../../core/services/group.service';
 import { VehicleService } from '../../../core/services/vehicle.service';
+import { ArgNumberPipe } from '../../../shared/pipes/arg-number.pipe';
 
 @Component({
   selector: 'app-vehicle-select',
   standalone: true,
-  imports: [CommonModule, RouterLink],
+  imports: [CommonModule, RouterLink, ArgNumberPipe],
   templateUrl: './vehicle-select.component.html',
   styleUrl: './vehicle-select.component.scss',
 })
