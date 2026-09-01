@@ -96,6 +96,43 @@ input[type='date'] {
   margin: 4px 0 0;
 }
 
+/* Campo de contraseña con botón mostrar/ocultar (ojo) */
+.password-wrap {
+  position: relative;
+  display: block;
+}
+
+.password-wrap .field {
+  padding-right: 44px;
+}
+
+.password-toggle {
+  position: absolute;
+  top: 50%;
+  right: 8px;
+  transform: translateY(-50%);
+  width: 32px;
+  height: 32px;
+  border: none;
+  background: transparent;
+  color: var(--gray-500);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  border-radius: var(--radius-sm);
+  transition: color 0.15s ease, background 0.15s ease;
+
+  &:hover {
+    color: var(--gray-700);
+    background: var(--gray-100);
+  }
+}
+
+.eye-icon {
+  display: block;
+}
+
 /* Botones */
 .btn {
   display: block;
