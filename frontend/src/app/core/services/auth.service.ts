@@ -3,7 +3,14 @@ import { Injectable, inject } from '@angular/core';
 import { BehaviorSubject, Observable, catchError, of, tap } from 'rxjs';
 
 import { environment } from '../../../environments/environment';
-import { AccessTokenResponse, LoginRequest, RegisterRequest } from '../models/auth.model';
+import {
+  AccessTokenResponse,
+  LoginRequest,
+  PasswordResetConfirmRequest,
+  PasswordResetRequest,
+  PasswordResetVerifyRequest,
+  RegisterRequest,
+} from '../models/auth.model';
 import { User } from '../models/user.model';
 
 const ACCESS_TOKEN_KEY = 'kmsplit_access_token';
@@ -64,6 +71,18 @@ export class AuthService {
         return of(null);
       }),
     );
+  }
+
+  requestPasswordReset(payload: PasswordResetRequest): Observable<{ detail: string }> {
+    return this.http.post<{ detail: string }>(`${this.baseUrl}/password-reset/request/`, payload);
+  }
+
+  verifyPasswordResetCode(payload: PasswordResetVerifyRequest): Observable<{ valid: boolean }> {
+    return this.http.post<{ valid: boolean }>(`${this.baseUrl}/password-reset/verify/`, payload);
+  }
+
+  confirmPasswordReset(payload: PasswordResetConfirmRequest): Observable<{ detail: string }> {
+    return this.http.post<{ detail: string }>(`${this.baseUrl}/password-reset/confirm/`, payload);
   }
 
   private clearLocalSession(): void {

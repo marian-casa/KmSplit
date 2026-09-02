@@ -160,6 +160,27 @@ SIMPLE_JWT = {
     "BLACKLIST_AFTER_ROTATION": True,
 }
 
+
+# Correo (recuperación de contraseña)
+# En desarrollo (sin EMAIL_HOST_USER) se usa el backend de consola, que
+# imprime el mail en los logs del backend — así funciona sin un SMTP real.
+EMAIL_BACKEND = "django.core.mail.backends.smtp.EmailBackend"
+DEFAULT_FROM_EMAIL = config("DEFAULT_FROM_EMAIL", default="noreply@kmsplit.app")
+EMAIL_HOST = config("EMAIL_HOST", default="")
+EMAIL_PORT = config("EMAIL_PORT", default=587, cast=int)
+EMAIL_HOST_USER = config("EMAIL_HOST_USER", default="")
+EMAIL_HOST_PASSWORD = config("EMAIL_HOST_PASSWORD", default="")
+EMAIL_USE_TLS = config("EMAIL_USE_TLS", default=True, cast=bool)
+
+if not EMAIL_HOST_USER:
+    # sin credenciales configuradas, imprimir en consola (útil en dev)
+    EMAIL_BACKEND = "django.core.mail.backends.console.EmailBackend"
+
+# Duración del código de recuperación, en minutos
+PASSWORD_RESET_CODE_TTL_MINUTES = config("PASSWORD_RESET_CODE_TTL_MINUTES", default=15, cast=int)
+# Intentos máximos de verificación de código antes de invalidarlo
+PASSWORD_RESET_MAX_ATTEMPTS = config("PASSWORD_RESET_MAX_ATTEMPTS", default=5, cast=int)
+
 CSP_DEFAULT_SRC = ("'self'",)
 CSP_SCRIPT_SRC = ("'self'",)
 CSP_STYLE_SRC = ("'self'", "'unsafe-inline'")  # la API navegable de DRF usa algo de CSS inline

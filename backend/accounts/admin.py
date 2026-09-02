@@ -1,7 +1,7 @@
 from django.contrib import admin
 from django.contrib.auth.admin import UserAdmin as BaseUserAdmin
 
-from .models import User
+from .models import PasswordReset, User
 
 
 class UserAdmin(BaseUserAdmin):
@@ -29,3 +29,10 @@ class UserAdmin(BaseUserAdmin):
 
 
 admin.site.register(User, UserAdmin)
+
+
+@admin.register(PasswordReset)
+class PasswordResetAdmin(admin.ModelAdmin):
+    list_display = ("user", "code", "is_used", "created_at", "expires_at")
+    list_filter = ("is_used",)
+    search_fields = ("user__email",)

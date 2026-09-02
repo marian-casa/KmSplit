@@ -1,7 +1,11 @@
 import time
 
 from django.conf import settings
+from django.contrib.auth.password_validation import validate_password
 from django.core.cache import cache
+from django.core.exceptions import ValidationError as DjangoValidationError
+from django.core.mail import send_mail
+from django.utils import timezone
 from rest_framework import generics, permissions, status
 from rest_framework.response import Response
 from rest_framework.throttling import ScopedRateThrottle
@@ -11,7 +15,7 @@ from rest_framework_simplejwt.serializers import TokenRefreshSerializer
 from rest_framework_simplejwt.tokens import RefreshToken
 from rest_framework_simplejwt.views import TokenObtainPairView, TokenRefreshView
 
-from .models import User
+from .models import PasswordReset, User
 from .serializers import RegisterSerializer, UserSerializer
 
 MAX_LOGIN_ATTEMPTS = 5
@@ -162,3 +166,159 @@ class MeView(APIView):
 
     def get(self, request):
         return Response(UserSerializer(request.user).data)
+
+
+def _get_latest_valid_reset(email):
+    """Devuelve el PasswordReset vigente del usuario (si existe), o None."""
+    try:
+        user = User.objects.get(email__iexact=email)
+    except User.DoesNotExist:
+        return None
+    try:
+        latest = user.password_resets.filter(is_used=False).latest("created_at")
+    except PasswordReset.DoesNotExist:
+        return None
+    if latest.is_expired:
+        return None
+    return latest
+
+
+def _attempts_key(email):
+    return f"password_reset_attempts:{email.strip().lower()}"
+
+
+class PasswordResetRequestView(APIView):
+    """
+    POST /api/auth/password-reset/request/  body: {"email": "..."}
+    Genera un código de 6 dígitos, lo guarda y lo envía por email.
+
+    Devuelve siempre 200 aunque el email no exista (para no revelar qué
+    cuentas están registradas). El reset se limita por throttle.
+    """
+
+    permission_classes = [permissions.AllowAny]
+    throttle_classes = [ScopedRateThrottle]
+    throttle_scope = "register"  # reutilizamos una tasa por email/h
+
+    def post(self, request):
+        email = (request.data.get("email") or "").strip().lower()
+
+        try:
+            user = User.objects.get(email__iexact=email)
+        except User.DoesNotExist:
+            # mimo: mismo mensaje de éxito, pero no se envía nada
+            return Response({"detail": "Si el email existe, te enviamos un código."})
+
+        # invalidar códigos anteriores sin usar del mismo usuario
+        user.password_resets.filter(is_used=False).update(is_used=True, used_at=timezone.now())
+        cache.delete(_attempts_key(email))
+
+        reset = PasswordReset.objects.create(
+            user=user,
+            code=PasswordReset.generate_code(),
+            expires_at=timezone.now()
+            + timezone.timedelta(minutes=settings.PASSWORD_RESET_CODE_TTL_MINUTES),
+        )
+
+        send_mail(
+            "KmSplit: tu código para recuperar la contraseña",
+            (
+                f"Hola {user.name}!\n\n"
+                f"Tu código de recuperación es: {reset.code}\n\n"
+                f"Tiene una validez de {settings.PASSWORD_RESET_CODE_TTL_MINUTES} minutos.\n\n"
+                "Si no pediste recuperar tu contraseña, ignorá este mail."
+            ),
+            settings.DEFAULT_FROM_EMAIL,
+            [user.email],
+            fail_silently=settings.ENVIRONMENT == "production",
+        )
+
+        return Response({"detail": "Si el email existe, te enviamos un código."})
+
+
+class PasswordResetVerifyView(APIView):
+    """
+    POST /api/auth/password-reset/verify/  body: {"email": "...", "code": "123456"}
+    Valida que el código sea correcto, esté vigente y no se hayan agotado
+    los intentos. Devuelve ok o un mensaje de error.
+    """
+
+    permission_classes = [permissions.AllowAny]
+
+    def post(self, request):
+        email = (request.data.get("email") or "").strip().lower()
+        code = (request.data.get("code") or "").strip()
+
+        attempts = cache.get(_attempts_key(email), 0)
+        if attempts >= settings.PASSWORD_RESET_MAX_ATTEMPTS:
+            return Response(
+                {"detail": "Demasiados intentos. Pedí un nuevo código."},
+                status=status.HTTP_429_TOO_MANY_REQUESTS,
+            )
+
+        reset = _get_latest_valid_reset(email)
+        if reset is None or reset.code != code:
+            cache.set(_attempts_key(email), attempts + 1, timeout=settings.PASSWORD_RESET_CODE_TTL_MINUTES * 60)
+            return Response(
+                {"detail": "Código incorrecto o vencido."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        cache.delete(_attempts_key(email))
+        return Response({"valid": True})
+
+
+class PasswordResetConfirmView(APIView):
+    """
+    POST /api/auth/password-reset/confirm/  body:
+    {"email": "...", "code": "123456", "new_password": "...", "confirm_password": "..."}
+    Revisa el código una vez más y, si es válido, setea la nueva contraseña
+    y consume el código (no se puede reutilizar).
+    """
+
+    permission_classes = [permissions.AllowAny]
+
+    def post(self, request):
+        email = (request.data.get("email") or "").strip().lower()
+        code = (request.data.get("code") or "").strip()
+        new_password = request.data.get("new_password")
+        confirm_password = request.data.get("confirm_password")
+
+        reset = _get_latest_valid_reset(email)
+        if reset is None or reset.code != code:
+            return Response(
+                {"detail": "Código incorrecto o vencido. Pedí uno nuevo."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        if not new_password or not confirm_password:
+            return Response(
+                {"detail": "Completá la nueva contraseña y su confirmación."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+        if new_password != confirm_password:
+            return Response(
+                {"detail": "Las contraseñas no coinciden."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        try:
+            validate_password(new_password, user=reset.user)
+        except DjangoValidationError as exc:
+            return Response(
+                {"detail": " ".join(exc.messages)},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        reset.user.set_password(new_password)
+        reset.user.save()
+
+        reset.is_used = True
+        reset.used_at = timezone.now()
+        reset.save(update_fields=["is_used", "used_at"])
+
+        # invalidar códigos residuales del mismo usuario
+        reset.user.password_resets.filter(is_used=False).update(is_used=True, used_at=timezone.now())
+        cache.delete(_attempts_key(email))
+
+        return Response({"detail": "Contraseña actualizada. Ya podés iniciar sesión."})
