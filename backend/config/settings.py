@@ -171,6 +171,9 @@ EMAIL_PORT = config("EMAIL_PORT", default=587, cast=int)
 EMAIL_HOST_USER = config("EMAIL_HOST_USER", default="")
 EMAIL_HOST_PASSWORD = config("EMAIL_HOST_PASSWORD", default="")
 EMAIL_USE_TLS = config("EMAIL_USE_TLS", default=True, cast=bool)
+# Timeout (segundos) para la conexión SMTP. Evita que un servidor de correo
+# inalcanzable cuelgue el worker de Gunicorn hasta su timeout de 30s.
+EMAIL_TIMEOUT = config("EMAIL_TIMEOUT", default=10, cast=int)
 
 if not EMAIL_HOST_USER:
     # sin credenciales configuradas, imprimir en consola (útil en dev)
