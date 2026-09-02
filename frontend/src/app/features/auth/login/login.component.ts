@@ -61,8 +61,15 @@ export class LoginComponent {
         if (err.status === 429) {
           const seconds = err.error?.retry_after_seconds ?? 60;
           this.startLockoutCountdown(seconds);
-        } else {
+        } else if (err.status === 400 || err.status === 401) {
           this.errorMessage.set('Email o contraseña incorrectos.');
+        } else {
+          const detail = err.error?.detail;
+          this.errorMessage.set(
+            detail
+              ? String(detail)
+              : `No pudimos conectar con el servidor (${err.status ?? 'error'}). Intentalo de nuevo.`,
+          );
         }
       },
     });

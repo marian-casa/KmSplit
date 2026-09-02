@@ -38,6 +38,12 @@ def _set_refresh_cookie(response, refresh_token: str, remember: bool = True) -> 
     vuelve a partir de cero (sesión deslizante). Con remember=False la cookie
     es de sesión (sin Max-Age): dura hasta que el usuario cierra el navegador.
     """
+    secure = settings.COOKIE_SECURE
+    samesite = settings.COOKIE_SAMESITE
+    # Django lanza ValueError si SameSite="None" sin Secure. Nunca dejamos que
+    # eso rompa el login: si no hay Secure configurado, bajamos a Lax.
+    if samesite == "None" and not secure:
+        samesite = "Lax"
     response.set_cookie(
         REFRESH_COOKIE_NAME,
         refresh_token,
@@ -47,8 +53,8 @@ def _set_refresh_cookie(response, refresh_token: str, remember: bool = True) -> 
             else None
         ),
         httponly=True,
-        secure=settings.COOKIE_SECURE,
-        samesite=settings.COOKIE_SAMESITE,
+        secure=secure,
+        samesite=samesite,
         path="/api/auth/",
     )
 
@@ -142,7 +148,12 @@ class LockedLoginView(TokenObtainPairView):
                 cookie_token = str(token)
             except Exception:
                 cookie_token = refresh_token
-            _set_refresh_cookie(response, cookie_token, remember=remember)
+            try:
+                _set_refresh_cookie(response, cookie_token, remember=remember)
+            except Exception:
+                # nunca dejamos que un fallo al setear la cookie tumbe el login:
+                # el access token igual se devuelve en el body.
+                pass
 
         return response
 
