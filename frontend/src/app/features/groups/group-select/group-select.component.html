@@ -1,0 +1,45 @@
+<div class="screen">
+  <div class="group-header">
+    <h1>¿Dónde vamos a cargar tus km hoy?</h1>
+    <button class="icon-btn" type="button" (click)="logout()" aria-label="Cerrar sesión">⎋</button>
+  </div>
+
+  <p class="muted group-hint">Elegí el grupo con el que compartís gastos hoy.</p>
+
+  @if (loading()) {
+    <p class="muted">Cargando...</p>
+  } @else if (errorMessage()) {
+    <p class="field-error">{{ errorMessage() }}</p>
+  } @else {
+    <div class="group-list">
+      @for (group of groups(); track group.id) {
+        <button
+          class="group-card"
+          [class.is-active]="isActive(group)"
+          type="button"
+          (click)="selectGroup(group)"
+          [disabled]="selectingId() === group.id"
+        >
+          <div class="group-avatar">👥</div>
+          <div class="group-info">
+            <p class="group-name">{{ group.name }}</p>
+            <p class="muted group-meta">
+              {{ memberCount(group) }} integrante{{ memberCount(group) === 1 ? '' : 's' }}
+              · {{ myRole(group) }}
+            </p>
+          </div>
+          @if (isActive(group)) {
+            <span class="active-badge">Trabajando aquí</span>
+          } @else {
+            <span class="group-arrow">›</span>
+          }
+        </button>
+      }
+    </div>
+
+    <div class="group-actions">
+      <a class="btn btn-secondary" routerLink="/grupos/crear">+ Crear grupo nuevo</a>
+      <a class="btn btn-secondary" routerLink="/grupos/unirse">Unirme a un grupo existente</a>
+    </div>
+  }
+</div>

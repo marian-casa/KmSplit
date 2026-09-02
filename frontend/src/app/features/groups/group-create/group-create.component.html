@@ -1,6 +1,6 @@
 <div class="screen">
   <div class="screen-header">
-    <button class="icon-btn" type="button" routerLink="/grupos/nuevo" aria-label="Volver">‹</button>
+    <button class="icon-btn" type="button" (click)="back()" aria-label="Volver">‹</button>
     <h1>Crear Grupo</h1>
     <span class="icon-btn-spacer"></span>
   </div>
@@ -28,7 +28,13 @@
     <div class="group-created">
       <p class="group-created-title">¡Grupo creado! 🎉</p>
       <p class="muted">Compartí este código con quienes quieras sumar al grupo:</p>
-      <div class="invite-code">{{ createdGroup()!.invite_code }}</div>
+      <button class="invite-code" type="button" (click)="copyInviteCode()" [attr.aria-label]="'Copiar código ' + createdGroup()!.invite_code">
+        <span class="invite-code-text">{{ createdGroup()!.invite_code }}</span>
+        <span class="invite-code-action">{{ codeCopied() ? '✓ Copiado' : '⧉ Copiar' }}</span>
+      </button>
+      @if (codeCopied()) {
+        <p class="code-copied-hint">Código copiado al portapapeles.</p>
+      }
       <button class="btn" type="button" (click)="continue()">Continuar</button>
     </div>
   }

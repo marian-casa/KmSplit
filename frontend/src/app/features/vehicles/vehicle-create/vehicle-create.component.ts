@@ -44,8 +44,12 @@ export class VehicleCreateComponent {
     this.groupService.list().subscribe({
       next: (groups) => {
         this.groups.set(groups);
+        const activeGroupId = this.groupService.getActiveGroupId();
         if (groups.length === 1) {
           this.form.patchValue({ group: groups[0].id });
+        } else if (activeGroupId !== null && groups.some((g) => g.id === activeGroupId)) {
+          // venimos de un grupo activo -> ese es el default al crear
+          this.form.patchValue({ group: activeGroupId });
         }
         this.loadingGroups.set(false);
       },

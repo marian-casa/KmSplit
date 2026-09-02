@@ -10,8 +10,25 @@ export class GroupService {
   private http = inject(HttpClient);
   private baseUrl = `${environment.apiUrl}/groups`;
 
+  private static readonly ACTIVE_GROUP_KEY = 'kmsplit_active_group';
+
   list(): Observable<Group[]> {
     return this.http.get<Group[]>(`${this.baseUrl}/`);
+  }
+
+  /** El id del grupo en el que el usuario está trabajando ahora. */
+  getActiveGroupId(): number | null {
+    const raw = localStorage.getItem(GroupService.ACTIVE_GROUP_KEY);
+    const value = raw === null ? NaN : Number(raw);
+    return Number.isInteger(value) && value > 0 ? value : null;
+  }
+
+  setActiveGroupId(id: number): void {
+    localStorage.setItem(GroupService.ACTIVE_GROUP_KEY, String(id));
+  }
+
+  clearActiveGroup(): void {
+    localStorage.removeItem(GroupService.ACTIVE_GROUP_KEY);
   }
 
   get(id: number): Observable<Group> {

@@ -32,6 +32,9 @@ export class VehicleHomeComponent {
     this.vehicleService.get(this.vehicleId).subscribe({
       next: (vehicle) => {
         this.vehicleService.setLastVehicleId(vehicle.id);
+        // el grupo del vehículo pasa a ser el "activo" para que el botón
+        // volver (‹) te devuelva siempre a la lista de su grupo
+        this.groupService.setActiveGroupId(vehicle.group);
         this.vehicle.set(vehicle);
         this.groupService.get(vehicle.group).subscribe({
           next: (group) => {

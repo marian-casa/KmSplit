@@ -1,7 +1,7 @@
 import { CommonModule } from '@angular/common';
 import { Component, inject, signal } from '@angular/core';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
-import { Router, RouterLink } from '@angular/router';
+import { Router } from '@angular/router';
 
 import { Group } from '../../../core/models/group.model';
 import { GroupService } from '../../../core/services/group.service';
@@ -9,7 +9,7 @@ import { GroupService } from '../../../core/services/group.service';
 @Component({
   selector: 'app-group-create',
   standalone: true,
-  imports: [CommonModule, ReactiveFormsModule, RouterLink],
+  imports: [CommonModule, ReactiveFormsModule],
   templateUrl: './group-create.component.html',
   styleUrl: './group-create.component.scss',
 })
@@ -21,10 +21,30 @@ export class GroupCreateComponent {
   loading = signal(false);
   errorMessage = signal<string | null>(null);
   createdGroup = signal<Group | null>(null);
+  codeCopied = signal(false);
+
+  // si el usuario ya tenía grupos, el botón volver va al selector; si no,
+  // al onboarding
+  private hasGroups = false;
 
   form = this.fb.nonNullable.group({
     name: ['', Validators.required],
   });
+
+  constructor() {
+    this.groupService.list().subscribe({
+      next: (groups) => {
+        this.hasGroups = groups.length > 0;
+      },
+      error: () => {
+        this.hasGroups = false;
+      },
+    });
+  }
+
+  back(): void {
+    this.router.navigate([this.hasGroups ? '/grupos/selector' : '/grupos/nuevo']);
+  }
 
   submit(): void {
     if (this.form.invalid) {
@@ -47,7 +67,20 @@ export class GroupCreateComponent {
     });
   }
 
+  copyInviteCode(): void {
+    const code = this.createdGroup()?.invite_code;
+    if (!code) return;
+    navigator.clipboard?.writeText(code);
+    this.codeCopied.set(true);
+    setTimeout(() => this.codeCopied.set(false), 2000);
+  }
+
   continue(): void {
+    const group = this.createdGroup();
+    if (group) {
+      // el grupo recién creado queda como el activo
+      this.groupService.setActiveGroupId(group.id);
+    }
     this.router.navigate(['/vehiculos']);
   }
 }

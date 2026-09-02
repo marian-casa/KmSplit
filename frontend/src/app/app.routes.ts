@@ -32,6 +32,14 @@ export const routes: Routes = [
       ),
   },
   {
+    path: 'grupos/selector',
+    canActivate: [authGuard],
+    loadComponent: () =>
+      import('./features/groups/group-select/group-select.component').then(
+        (m) => m.GroupSelectComponent,
+      ),
+  },
+  {
     path: 'grupos/crear',
     canActivate: [authGuard],
     loadComponent: () =>

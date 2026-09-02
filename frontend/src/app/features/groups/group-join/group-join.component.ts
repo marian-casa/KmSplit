@@ -1,14 +1,15 @@
 import { CommonModule } from '@angular/common';
 import { Component, inject, signal } from '@angular/core';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
-import { ActivatedRoute, Router, RouterLink } from '@angular/router';
+import { ActivatedRoute, Router } from '@angular/router';
 
+import { Group } from '../../../core/models/group.model';
 import { GroupService } from '../../../core/services/group.service';
 
 @Component({
   selector: 'app-group-join',
   standalone: true,
-  imports: [CommonModule, ReactiveFormsModule, RouterLink],
+  imports: [CommonModule, ReactiveFormsModule],
   templateUrl: './group-join.component.html',
   styleUrl: './group-join.component.scss',
 })
@@ -21,6 +22,9 @@ export class GroupJoinComponent {
   loading = signal(false);
   errorMessage = signal<string | null>(null);
 
+  // si el usuario ya tenía grupos, el botón volver va al selector; si no, al onboarding
+  private hasGroups = false;
+
   form = this.fb.nonNullable.group({
     invite_code: ['', Validators.required],
   });
@@ -31,6 +35,19 @@ export class GroupJoinComponent {
     if (codeFromLink) {
       this.form.patchValue({ invite_code: codeFromLink.toUpperCase() });
     }
+
+    this.groupService.list().subscribe({
+      next: (groups) => {
+        this.hasGroups = groups.length > 0;
+      },
+      error: () => {
+        this.hasGroups = false;
+      },
+    });
+  }
+
+  back(): void {
+    this.router.navigate([this.hasGroups ? '/grupos/selector' : '/grupos/nuevo']);
   }
 
   submit(): void {
@@ -43,7 +60,9 @@ export class GroupJoinComponent {
     this.errorMessage.set(null);
 
     this.groupService.join(this.form.getRawValue().invite_code).subscribe({
-      next: () => {
+      next: (group: Group) => {
+        // ya estamos en el grupo -> lo dejamos como activo y vamos a sus vehículos
+        this.groupService.setActiveGroupId(group.id);
         this.loading.set(false);
         this.router.navigate(['/vehiculos']);
       },
