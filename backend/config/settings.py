@@ -164,7 +164,7 @@ SIMPLE_JWT = {
 # Correo (recuperación de contraseña)
 # En desarrollo (sin EMAIL_HOST_USER) se usa el backend de consola, que
 # imprime el mail en los logs del backend — así funciona sin un SMTP real.
-EMAIL_BACKEND = "django.core.mail.backends.smtp.EmailBackend"
+EMAIL_BACKEND = "core.mail.SmtpEmailBackend"
 DEFAULT_FROM_EMAIL = config("DEFAULT_FROM_EMAIL", default="noreply@kmsplit.app")
 EMAIL_HOST = config("EMAIL_HOST", default="")
 EMAIL_PORT = config("EMAIL_PORT", default=587, cast=int)
