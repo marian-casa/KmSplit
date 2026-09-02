@@ -16,6 +16,7 @@ from rest_framework_simplejwt.serializers import TokenRefreshSerializer
 from rest_framework_simplejwt.tokens import RefreshToken
 from rest_framework_simplejwt.views import TokenObtainPairView, TokenRefreshView
 
+from core.mail import send_brevo_email
 from .models import PasswordReset, User
 from .serializers import RegisterSerializer, UserSerializer
 
@@ -224,17 +225,25 @@ class PasswordResetRequestView(APIView):
         )
 
         try:
-            send_mail(
-                "KmSplit: tu código para recuperar la contraseña",
-                (
-                    f"Hola {user.name}!\n\n"
-                    f"Tu código de recuperación es: {reset.code}\n\n"
-                    f"Tiene una validez de {settings.PASSWORD_RESET_CODE_TTL_MINUTES} minutos.\n\n"
-                    "Si no pediste recuperar tu contraseña, ignorá este mail."
-                ),
-                settings.DEFAULT_FROM_EMAIL,
-                [user.email],
+            subject = "KmSplit: tu código para recuperar la contraseña"
+            body = (
+                f"Hola {user.name}!\n\n"
+                f"Tu código de recuperación es: {reset.code}\n\n"
+                f"Tiene una validez de {settings.PASSWORD_RESET_CODE_TTL_MINUTES} minutos.\n\n"
+                "Si no pediste recuperar tu contraseña, ignorá este mail."
             )
+            if settings.BREVO_API_KEY:
+                # Viaja por HTTPS (443) — el SMTP saliente suele estar
+                # bloqueado en la red de Railway.
+                send_brevo_email(
+                    subject=subject,
+                    body=body,
+                    to_email=user.email,
+                    from_email=settings.DEFAULT_FROM_EMAIL,
+                    from_name=settings.DEFAULT_FROM_NAME,
+                )
+            else:
+                send_mail(subject, body, settings.DEFAULT_FROM_EMAIL, [user.email])
         except Exception:
             # Un fallo del proveedor de email (credenciales, TLS, red...)
             # NO debe tumbar el endpoint ni revelar al usuario que la cuenta existe.
