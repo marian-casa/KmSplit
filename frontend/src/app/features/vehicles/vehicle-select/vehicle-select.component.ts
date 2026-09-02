@@ -22,68 +22,76 @@ export class VehicleSelectComponent {
   private auth = inject(AuthService);
   private router = inject(Router);
 
-  groups = signal<Group[]>([]);
+  group = signal<Group | null>(null);
   vehicles = signal<Vehicle[]>([]);
   loading = signal(true);
   errorMessage = signal<string | null>(null);
   leavingGroupId = signal<number | null>(null);
+  codeCopied = signal(false);
+
+  lastVehicleId: number | null = null;
+
+  // Copia del grupo que está por abandonar, para el diálogo de confirmación
+  pendingLeaveGroup = signal<Group | null>(null);
 
   constructor() {
-    // fetchMe deja disponible el id del usuario (para el mensaje de owner) y
-    // valida que la sesión siga viva; el guard ya cubre el caso no logueado.
     this.auth.fetchMe().subscribe({
-      next: () => this.loadAll(),
-      error: () => this.loadAll(),
+      next: () => this.loadActiveGroup(),
+      error: () => this.loadActiveGroup(),
     });
+
+    this.lastVehicleId = this.vehicleService.getLastVehicleId();
   }
 
-  private loadAll(): void {
+  private loadActiveGroup(): void {
     this.loading.set(true);
     this.errorMessage.set(null);
 
-    this.groupService.list().subscribe({
-      next: (groups) => {
-        if (groups.length === 0) {
-          // usuario sin grupo todavía no puede ver/crear vehículos ->
-          // lo mandamos primero a crear o unirse a un grupo
-          this.router.navigate(['/grupos/nuevo']);
-          return;
-        }
-        this.groups.set(groups);
-        this.vehicleService.list().subscribe({
-          next: (vehicles) => {
-            this.vehicles.set(vehicles);
-            this.loading.set(false);
-            this.goToLastVehicle(vehicles);
-          },
-          error: () => {
-            this.errorMessage.set('No pudimos cargar tus vehículos.');
-            this.loading.set(false);
-          },
-        });
+    const activeGroupId = this.groupService.getActiveGroupId();
+
+    if (activeGroupId === null) {
+      // no hay grupo elegido todavía -> primero elegís el grupo
+      this.router.navigate(['/grupos/selector']);
+      return;
+    }
+
+    this.groupService.get(activeGroupId).subscribe({
+      next: (group) => {
+        this.group.set(group);
+        this.loadVehicles(group.id);
       },
       error: () => {
-        this.errorMessage.set('No pudimos cargar tus grupos.');
+        // el grupo activo ya no existe (nos sacaron, lo borraron...) ->
+        // limpiamos la elección y volvemos al selector
+        this.groupService.clearActiveGroup();
+        this.router.navigate(['/grupos/selector']);
+      },
+    });
+  }
+
+  private loadVehicles(groupId: number): void {
+    this.vehicleService.list().subscribe({
+      next: (vehicles) => {
+        this.vehicles.set(vehicles.filter((v) => v.group === groupId));
+        this.loading.set(false);
+      },
+      error: () => {
+        this.errorMessage.set('No pudimos cargar tus vehículos.');
         this.loading.set(false);
       },
     });
   }
 
-  /** Si el usuario ya venía trabajando con un vehículo, volvemos a él por defecto. */
-  private goToLastVehicle(vehicles: Vehicle[]): void {
-    const lastId = this.vehicleService.getLastVehicleId();
-    if (lastId !== null && vehicles.some((v) => v.id === lastId)) {
-      this.vehicleService.clearLastVehicle();
-      this.router.navigate(['/vehiculo', lastId]);
-    }
+  copyInviteCode(): void {
+    const code = this.group()?.invite_code;
+    if (!code) return;
+    navigator.clipboard?.writeText(code);
+    this.codeCopied.set(true);
+    setTimeout(() => this.codeCopied.set(false), 2000);
   }
 
-  groupName(groupId: number): string {
-    return this.groups().find((g) => g.id === groupId)?.name ?? 'Grupo';
-  }
-
-  vehiclesByGroup(groupId: number): Vehicle[] {
-    return this.vehicles().filter((v) => v.group === groupId);
+  changeGroup(): void {
+    this.router.navigate(['/grupos/selector']);
   }
 
   iAmOwner(group: Group): boolean {
@@ -92,17 +100,42 @@ export class VehicleSelectComponent {
     return group.members.some((m) => m.user === userId && m.role === 'owner');
   }
 
-  askLeaveGroup(group: Group): void {
-    const message = this.iAmOwner(group)
-      ? `Vas a abandonar "${group.name}". Como sos el dueño, el grupo quedará a cargo del integrante más antiguo. ¿Continuar?`
-      : `¿Estás seguro de que querés abandonar el grupo "${group.name}"?`;
-    if (!window.confirm(message)) return;
+  /** True si soy dueño y además el único integrante activo del grupo. */
+  iAmSoleOwner(group: Group): boolean {
+    const userId = this.auth.getCurrentUser()?.id;
+    if (userId === undefined) return false;
+    const active = group.members.filter((m) => m.is_active);
+    return (
+      active.length === 1 &&
+      active[0].user === userId &&
+      active[0].role === 'owner'
+    );
+  }
 
+  /** Abre el diálogo de confirmación dentro de la app (no window.confirm). */
+  requestLeaveGroup(group: Group): void {
+    this.pendingLeaveGroup.set(group);
+  }
+
+  cancelLeaveGroup(): void {
+    this.pendingLeaveGroup.set(null);
+  }
+
+  confirmLeaveGroup(): void {
+    const group = this.pendingLeaveGroup();
+    if (!group) return;
+
+    this.pendingLeaveGroup.set(null);
     this.leavingGroupId.set(group.id);
     this.errorMessage.set(null);
 
     this.groupService.leave(group.id).subscribe({
-      next: () => this.loadAll(),
+      next: () => {
+        // si abandonamos el grupo en el que estábamos trabajando, volvemos
+        // al selector de grupo y limpiamos la elección
+        this.groupService.clearActiveGroup();
+        this.router.navigate(['/grupos/selector']);
+      },
       error: (err) => {
         this.leavingGroupId.set(null);
         this.errorMessage.set(err.error?.detail ?? 'No pudimos abandonar el grupo.');

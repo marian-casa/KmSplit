@@ -65,7 +65,7 @@ export class RegisterComponent {
           next: () => {
             this.auth.fetchMe().subscribe(() => {
               this.loading.set(false);
-              this.router.navigate(['/vehiculos']);
+              this.router.navigate(['/grupos/selector']);
             });
           },
           error: () => {

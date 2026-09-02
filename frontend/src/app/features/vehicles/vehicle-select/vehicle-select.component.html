@@ -1,45 +1,93 @@
 <div class="screen">
   <div class="vehicle-header">
-    <h1>Elegí un vehículo</h1>
+    <button
+      class="icon-btn"
+      type="button"
+      (click)="changeGroup()"
+      aria-label="Cambiar de grupo"
+    >‹</button>
+    <h1>{{ group()?.name ?? 'Vehículos' }}</h1>
     <button class="icon-btn" type="button" (click)="logout()" aria-label="Cerrar sesión">⎋</button>
   </div>
 
-  @if (loading()) {
-    <p class="muted">Cargando...</p>
-  } @else if (errorMessage()) {
+  @if (errorMessage()) {
     <p class="field-error">{{ errorMessage() }}</p>
-  } @else if (vehicles().length === 0) {
-    <p class="muted">Todavía no tenés vehículos. Agregá el primero para empezar.</p>
-  } @else {
-    @for (group of groups(); track group.id) {
-      @if (vehiclesByGroup(group.id).length > 0) {
-        <div class="group-section">
-          <div class="group-row">
-            <p class="group-name">{{ group.name }}</p>
-            <button
-              class="link link-danger"
-              type="button"
-              (click)="askLeaveGroup(group)"
-              [disabled]="leavingGroupId() === group.id"
-            >
-              {{ leavingGroupId() === group.id ? 'Saliendo...' : 'Abandonar' }}
-            </button>
-          </div>
-          <div class="vehicle-list">
-            @for (vehicle of vehiclesByGroup(group.id); track vehicle.id) {
-              <a class="vehicle-card" [routerLink]="['/vehiculo', vehicle.id]">
-                <div class="vehicle-avatar">🚗</div>
-                <div>
-                  <p class="vehicle-name">{{ vehicle.name }}</p>
-                  <p class="muted">{{ vehicle.current_km | argNumber }} km actuales</p>
-                </div>
-              </a>
-            }
-          </div>
-        </div>
-      }
-    }
   }
 
-  <a class="btn btn-secondary vehicle-add" routerLink="/vehiculos/nuevo">+ Agregar vehículo</a>
+  @if (loading()) {
+    <p class="muted">Cargando...</p>
+  } @else if (group(); as g) {
+    <div class="vehicle-content">
+      @if (vehicles().length === 0) {
+        <p class="muted">Todavía no hay vehículos en este grupo. Agregá el primero para empezar.</p>
+      } @else {
+        <div class="vehicle-list">
+          @for (vehicle of vehicles(); track vehicle.id) {
+            <a
+              class="vehicle-card"
+              [class.is-last]="vehicle.id === lastVehicleId"
+              [routerLink]="['/vehiculo', vehicle.id]"
+            >
+              <div class="vehicle-avatar">🚗</div>
+              <div class="vehicle-info">
+                <p class="vehicle-name">{{ vehicle.name }}</p>
+                <p class="muted">{{ vehicle.current_km | argNumber }} km actuales</p>
+              </div>
+              @if (vehicle.id === lastVehicleId) {
+                <span class="last-badge">Último</span>
+              }
+            </a>
+          }
+        </div>
+      }
+    </div>
+
+    <div class="group-actions">
+      <button class="invite-code-btn" type="button" (click)="copyInviteCode()">
+        <p class="muted share-hint">Código de Invitación:</p>
+        <span class="invite-code-text">{{ g.invite_code }}</span>
+        <span class="copy-action" [class.copied]="codeCopied()">
+          {{ codeCopied() ? '✓' : '⧉' }}
+        </span>
+      </button>
+      @if (codeCopied()) {
+        <span class="toast">¡Copiado en el portapapeles!</span>
+      }
+
+      <a class="btn btn-secondary vehicle-add" routerLink="/vehiculos/nuevo">+ Agregar vehículo</a>
+      <button class="link link-danger leave-link" type="button" (click)="requestLeaveGroup(g)">
+        Abandonar este grupo
+      </button>
+    </div>
+  }
 </div>
+
+@if (pendingLeaveGroup(); as group) {
+  <div class="dialog-overlay" (click)="cancelLeaveGroup()">
+    <div class="confirm-dialog" role="dialog" aria-modal="true">
+      <h2 class="dialog-title">Abandonar grupo</h2>
+      <p class="dialog-text">
+        ¿Estás seguro de que querés salir de
+        <strong>&quot;{{ group.name }}&quot;</strong>?
+      </p>
+      @if (iAmSoleOwner(group)) {
+        <p class="dialog-warning">
+          Sos el único integrante: al salir, el grupo y sus vehículos se
+          eliminarán definitivamente.
+        </p>
+      } @else if (iAmOwner(group)) {
+        <p class="dialog-warning">
+          Como sos el dueño, el grupo quedará a cargo del integrante más antiguo.
+        </p>
+      }
+      <div class="dialog-actions">
+        <button class="btn btn-danger" type="button" (click)="cancelLeaveGroup()">
+          Cancelar
+        </button>
+        <button class="btn btn-confirm" type="button" (click)="confirmLeaveGroup()">
+          Sí, salir
+        </button>
+      </div>
+    </div>
+  </div>
+}

@@ -44,11 +44,11 @@ export class LoginComponent {
         this.auth.fetchMe().subscribe({
           next: () => {
             this.loading.set(false);
-            this.router.navigate(['/vehiculos']);
+            this.router.navigate(['/grupos/selector']);
           },
           error: () => {
             this.loading.set(false);
-            this.router.navigate(['/vehiculos']);
+            this.router.navigate(['/grupos/selector']);
           },
         });
       },
