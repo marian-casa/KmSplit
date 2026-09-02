@@ -1,3 +1,4 @@
+import logging
 import time
 
 from django.conf import settings
@@ -21,6 +22,8 @@ from .serializers import RegisterSerializer, UserSerializer
 MAX_LOGIN_ATTEMPTS = 5
 LOCKOUT_SECONDS = 15 * 60  # 15 minutos
 REFRESH_COOKIE_NAME = "kmsplit_refresh"
+
+logger = logging.getLogger(__name__)
 
 
 def _set_refresh_cookie(response, refresh_token: str) -> None:
@@ -220,18 +223,27 @@ class PasswordResetRequestView(APIView):
             + timezone.timedelta(minutes=settings.PASSWORD_RESET_CODE_TTL_MINUTES),
         )
 
-        send_mail(
-            "KmSplit: tu código para recuperar la contraseña",
-            (
-                f"Hola {user.name}!\n\n"
-                f"Tu código de recuperación es: {reset.code}\n\n"
-                f"Tiene una validez de {settings.PASSWORD_RESET_CODE_TTL_MINUTES} minutos.\n\n"
-                "Si no pediste recuperar tu contraseña, ignorá este mail."
-            ),
-            settings.DEFAULT_FROM_EMAIL,
-            [user.email],
-            fail_silently=settings.ENVIRONMENT == "production",
-        )
+        try:
+            send_mail(
+                "KmSplit: tu código para recuperar la contraseña",
+                (
+                    f"Hola {user.name}!\n\n"
+                    f"Tu código de recuperación es: {reset.code}\n\n"
+                    f"Tiene una validez de {settings.PASSWORD_RESET_CODE_TTL_MINUTES} minutos.\n\n"
+                    "Si no pediste recuperar tu contraseña, ignorá este mail."
+                ),
+                settings.DEFAULT_FROM_EMAIL,
+                [user.email],
+            )
+        except Exception:
+            # Un fallo del proveedor de email (credenciales, TLS, red...)
+            # NO debe tumbar el endpoint ni revelar al usuario que la cuenta existe.
+            # El error real queda en los logs del backend para poder diagnosticarlo.
+            logger.exception(
+                "No se pudo enviar el código de reset a %s (EMAIL_HOST=%s)",
+                user.email,
+                settings.EMAIL_HOST,
+            )
 
         return Response({"detail": "Si el email existe, te enviamos un código."})
 
