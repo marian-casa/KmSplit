@@ -29,6 +29,8 @@ def _latest_code(test_user):
 class TestPasswordResetRequest:
     def test_sends_email_with_six_digit_code(self, test_user, settings):
         settings.EMAIL_BACKEND = "django.core.mail.backends.locmem.EmailBackend"
+        settings.BREVO_API_KEY = ""  # si el .env local tiene una api key real,
+        # el view iría por Brevo y no a mail.outbox -- queremos forzar el SMTP local
         client = APIClient()
 
         response = _request_code(client, test_user.email)

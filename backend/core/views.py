@@ -45,6 +45,42 @@ class GroupViewSet(viewsets.ModelViewSet):
 
         return Response(GroupSerializer(group).data, status=status.HTTP_200_OK)
 
+    @action(detail=True, methods=["post"])
+    def leave(self, request, pk=None):
+        """POST /api/groups/{pk}/leave/ — el usuario abandona el grupo."""
+        group = self.get_object()
+        membership = get_membership(request.user, group)
+        if membership is None:
+            return Response(
+                {"detail": "No sos miembro de este grupo."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        if membership.role == "owner":
+            successor = (
+                group.members.filter(is_active=True)
+                .exclude(user=request.user)
+                .order_by("joined_at")
+                .first()
+            )
+            if successor is None:
+                # el dueño era el único integrante -> no queda nadie para hacerse
+                # cargo, así que el grupo se elimina (y sus vehículos con él)
+                group.delete()
+                return Response(
+                    {"detail": "Eras el único integrante, así que el grupo se eliminó."},
+                    status=status.HTTP_200_OK,
+                )
+            # si había más integrantes, el más antiguo pasa a ser dueño
+            successor.role = "owner"
+            successor.save(update_fields=["role"])
+
+        membership.is_active = False
+        membership.removed_at = timezone.now()
+        membership.save(update_fields=["is_active", "removed_at"])
+
+        return Response({"detail": "Saliste del grupo."})
+
     @action(detail=True, methods=["patch"], url_path="members/(?P<user_id>[^/.]+)")
     def update_member(self, request, pk=None, user_id=None):
         group = self.get_object()
