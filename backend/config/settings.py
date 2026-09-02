@@ -124,8 +124,15 @@ CSRF_TRUSTED_ORIGINS = _csrf_trusted.split(',') if _csrf_trusted else []
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 CORS_ALLOWED_ORIGINS = config('CORS_ALLOWED_ORIGINS').split (',')
-ALLOWED_HOSTS = config('ALLOWED_HOSTS').split(',')
 ENVIRONMENT = config('ENVIRONMENT', default='development')
+
+ALLOWED_HOSTS = config('ALLOWED_HOSTS').split(',')
+# En producción el frontend proxyea /api desde Vercel (mismo origen). El
+# navegador habla con kmsplit.vercel.app y Vercel reenvía a Railway con el
+# Host de Vercel, así que ese dominio tiene que estar siempre permitido.
+VERCEL_HOST = 'kmsplit.vercel.app'
+if VERCEL_HOST not in ALLOWED_HOSTS:
+    ALLOWED_HOSTS.append(VERCEL_HOST)
 COOKIE_SECURE = config('COOKIE_SECURE', default=(ENVIRONMENT == 'production'), cast=bool)
 CORS_ALLOW_CREDENTIALS = True
 COOKIE_SAMESITE = config(
