@@ -26,6 +26,10 @@ export class GroupService {
     return this.http.post<Group>(`${this.baseUrl}/join/`, { invite_code: inviteCode });
   }
 
+  leave(groupId: number): Observable<{ detail: string }> {
+    return this.http.post<{ detail: string }>(`${this.baseUrl}/${groupId}/leave/`, {});
+  }
+
   updateMember(
     groupId: number,
     userId: number,

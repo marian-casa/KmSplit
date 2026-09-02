@@ -41,6 +41,10 @@ export class AuthService {
     return !!this.accessToken;
   }
 
+  getCurrentUser(): User | null {
+    return this.currentUserSubject.getValue();
+  }
+
   login(payload: LoginRequest): Observable<AccessTokenResponse> {
     return this.http
       .post<AccessTokenResponse>(`${this.baseUrl}/login/`, payload)

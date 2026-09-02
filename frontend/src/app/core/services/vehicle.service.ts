@@ -10,6 +10,8 @@ export class VehicleService {
   private http = inject(HttpClient);
   private baseUrl = `${environment.apiUrl}/vehicles`;
 
+  private static readonly LAST_VEHICLE_KEY = 'kmsplit_last_vehicle';
+
   list(): Observable<Vehicle[]> {
     return this.http.get<Vehicle[]>(`${this.baseUrl}/`);
   }
@@ -24,5 +26,20 @@ export class VehicleService {
 
   update(id: number, data: Partial<Vehicle>): Observable<Vehicle> {
     return this.http.patch<Vehicle>(`${this.baseUrl}/${id}/`, data);
+  }
+
+  /** Último vehículo que el usuario estuvo viendo, para volver a él por defecto. */
+  setLastVehicleId(id: number): void {
+    localStorage.setItem(VehicleService.LAST_VEHICLE_KEY, String(id));
+  }
+
+  getLastVehicleId(): number | null {
+    const raw = localStorage.getItem(VehicleService.LAST_VEHICLE_KEY);
+    const value = raw === null ? NaN : Number(raw);
+    return Number.isInteger(value) && value > 0 ? value : null;
+  }
+
+  clearLastVehicle(): void {
+    localStorage.removeItem(VehicleService.LAST_VEHICLE_KEY);
   }
 }

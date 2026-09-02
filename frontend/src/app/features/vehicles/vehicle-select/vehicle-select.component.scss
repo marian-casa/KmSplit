@@ -34,6 +34,40 @@
   gap: 12px;
 }
 
+.group-section {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-bottom: 24px;
+}
+
+.group-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.group-name {
+  font-size: 15px;
+  font-weight: 800;
+  color: var(--gray-900);
+  margin: 0;
+}
+
+.link-danger {
+  color: var(--red);
+  font-size: 13px;
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 0;
+}
+
+.link-danger:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+
 .vehicle-card {
   display: flex;
   align-items: center;

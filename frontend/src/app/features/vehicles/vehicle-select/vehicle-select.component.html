@@ -11,17 +11,34 @@
   } @else if (vehicles().length === 0) {
     <p class="muted">Todavía no tenés vehículos. Agregá el primero para empezar.</p>
   } @else {
-    <div class="vehicle-list">
-      @for (vehicle of vehicles(); track vehicle.id) {
-        <a class="vehicle-card" [routerLink]="['/vehiculo', vehicle.id]">
-          <div class="vehicle-avatar">🚗</div>
-          <div>
-            <p class="vehicle-name">{{ vehicle.name }}</p>
-            <p class="muted">{{ vehicle.current_km | argNumber }} km actuales</p>
+    @for (group of groups(); track group.id) {
+      @if (vehiclesByGroup(group.id).length > 0) {
+        <div class="group-section">
+          <div class="group-row">
+            <p class="group-name">{{ group.name }}</p>
+            <button
+              class="link link-danger"
+              type="button"
+              (click)="askLeaveGroup(group)"
+              [disabled]="leavingGroupId() === group.id"
+            >
+              {{ leavingGroupId() === group.id ? 'Saliendo...' : 'Abandonar' }}
+            </button>
           </div>
-        </a>
+          <div class="vehicle-list">
+            @for (vehicle of vehiclesByGroup(group.id); track vehicle.id) {
+              <a class="vehicle-card" [routerLink]="['/vehiculo', vehicle.id]">
+                <div class="vehicle-avatar">🚗</div>
+                <div>
+                  <p class="vehicle-name">{{ vehicle.name }}</p>
+                  <p class="muted">{{ vehicle.current_km | argNumber }} km actuales</p>
+                </div>
+              </a>
+            }
+          </div>
+        </div>
       }
-    </div>
+    }
   }
 
   <a class="btn btn-secondary vehicle-add" routerLink="/vehiculos/nuevo">+ Agregar vehículo</a>

@@ -31,6 +31,7 @@ export class VehicleHomeComponent {
   constructor() {
     this.vehicleService.get(this.vehicleId).subscribe({
       next: (vehicle) => {
+        this.vehicleService.setLastVehicleId(vehicle.id);
         this.vehicle.set(vehicle);
         this.groupService.get(vehicle.group).subscribe({
           next: (group) => {
