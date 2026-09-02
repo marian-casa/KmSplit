@@ -63,6 +63,23 @@ class TestPasswordResetRequest:
         assert second.is_used is False
         assert second.id != first.id
 
+    def test_smtp_failure_does_not_crash_endpoint(self, test_user, monkeypatch):
+        client = APIClient()
+
+        def broken_send_mail(*args, **kwargs):
+            raise Exception("connection refused (smtp mal configurado)")
+
+        monkeypatch.setattr("accounts.views.send_mail", broken_send_mail)
+
+        response = _request_code(client, test_user.email)
+        assert response.status_code == 200
+        assert "Si el email existe" in response.data["detail"]
+
+        reset = _latest_code(test_user)
+        reset.refresh_from_db()
+        assert reset.is_used is False
+        assert len(reset.code) == 6
+
 
 class TestPasswordResetVerify:
     def test_valid_code_passes(self, test_user):
