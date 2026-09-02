@@ -166,14 +166,19 @@ SIMPLE_JWT = {
 # imprime el mail en los logs del backend — así funciona sin un SMTP real.
 EMAIL_BACKEND = "core.mail.SmtpEmailBackend"
 DEFAULT_FROM_EMAIL = config("DEFAULT_FROM_EMAIL", default="noreply@kmsplit.app")
+DEFAULT_FROM_NAME = config("DEFAULT_FROM_NAME", default="KmSplit")
 EMAIL_HOST = config("EMAIL_HOST", default="")
 EMAIL_PORT = config("EMAIL_PORT", default=587, cast=int)
 EMAIL_HOST_USER = config("EMAIL_HOST_USER", default="")
 EMAIL_HOST_PASSWORD = config("EMAIL_HOST_PASSWORD", default="")
 EMAIL_USE_TLS = config("EMAIL_USE_TLS", default=True, cast=bool)
+EMAIL_USE_SSL = config("EMAIL_USE_SSL", default=False, cast=bool)
 # Timeout (segundos) para la conexión SMTP. Evita que un servidor de correo
 # inalcanzable cuelgue el worker de Gunicorn hasta su timeout de 30s.
 EMAIL_TIMEOUT = config("EMAIL_TIMEOUT", default=10, cast=int)
+# Camino recomendado para producción: el SMTP saliente (587/465) suele estar
+# bloqueado en Railway; la API REST de Brevo viaja por HTTPS (443) y funciona.
+BREVO_API_KEY = config("BREVO_API_KEY", default="")
 
 if not EMAIL_HOST_USER:
     # sin credenciales configuradas, imprimir en consola (útil en dev)

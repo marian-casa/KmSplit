@@ -1,3 +1,5 @@
+import json
+
 import pytest
 from django.core import mail
 from django.core.cache import cache
@@ -79,6 +81,29 @@ class TestPasswordResetRequest:
         reset.refresh_from_db()
         assert reset.is_used is False
         assert len(reset.code) == 6
+
+    def test_request_uses_brevo_api_when_configured(self, test_user, settings, monkeypatch):
+        settings.BREVO_API_KEY = "xkeysib-test"
+        sent = {}
+        status = {"value": 201}
+
+        def fake_urlopen(request, timeout):
+            sent["payload"] = json.loads(request.data)
+            sent["api_key"] = {k.lower(): v for k, v in request.headers.items()}.get("api-key")
+            sent["url"] = request.full_url
+            return type("FakeResp", (), {"status": 201, "__enter__": lambda s: s, "__exit__": lambda *a: None})()
+
+        monkeypatch.setattr("core.mail.urllib.request.urlopen", fake_urlopen)
+
+        client = APIClient()
+        response = _request_code(client, test_user.email)
+        assert response.status_code == 200
+
+        assert sent["api_key"] == "xkeysib-test"
+        assert sent["url"] == "https://api.brevo.com/v3/smtp/email"
+        assert sent["payload"]["to"][0]["email"] == test_user.email
+        _latest_code(test_user).refresh_from_db()
+        assert str(_latest_code(test_user).code) in sent["payload"]["textContent"]
 
 
 class TestPasswordResetVerify:
