@@ -1,3 +1,5 @@
+import base64
+import json
 import logging
 import time
 
@@ -27,11 +29,23 @@ REFRESH_COOKIE_NAME = "kmsplit_refresh"
 logger = logging.getLogger(__name__)
 
 
-def _set_refresh_cookie(response, refresh_token: str) -> None:
+def _set_refresh_cookie(response, refresh_token: str, remember: bool = True) -> None:
+    """
+    Guarda el refresh token en una cookie httpOnly.
+
+    Con remember=True la cookie es persistente y dura REFRESH_TOKEN_LIFETIME
+    (7 días) desde la última actividad -- al rotar en cada refresh, el reloj
+    vuelve a partir de cero (sesión deslizante). Con remember=False la cookie
+    es de sesión (sin Max-Age): dura hasta que el usuario cierra el navegador.
+    """
     response.set_cookie(
         REFRESH_COOKIE_NAME,
         refresh_token,
-        max_age=int(settings.SIMPLE_JWT["REFRESH_TOKEN_LIFETIME"].total_seconds()),
+        max_age=(
+            int(settings.SIMPLE_JWT["REFRESH_TOKEN_LIFETIME"].total_seconds())
+            if remember
+            else None
+        ),
         httponly=True,
         secure=settings.COOKIE_SECURE,
         samesite=settings.COOKIE_SAMESITE,
@@ -41,6 +55,23 @@ def _set_refresh_cookie(response, refresh_token: str) -> None:
 
 def _clear_refresh_cookie(response) -> None:
     response.delete_cookie(REFRESH_COOKIE_NAME, path="/api/auth/")
+
+
+def _parse_remember(value) -> bool:
+    """
+    Normaliza el flag "remember" independientemente de cómo llegue:
+
+      - JSON  : True / False  (bool)
+      - query : "true" / "false" (str)
+      - form  : ["False"] (lista, DRF decodifica así los campos repetidos)
+
+    Si falta el campo, por defecto True (sesión persistente de 7 días).
+    """
+    if isinstance(value, list):
+        value = value[0] if value else ""
+    if isinstance(value, str):
+        return value.strip().lower() not in ("", "0", "false", "no", "off")
+    return bool(value)
 
 
 class RegisterView(generics.CreateAPIView):
@@ -101,7 +132,17 @@ class LockedLoginView(TokenObtainPairView):
         # sacar el refresh del body y ponerlo como cookie httpOnly en su lugar
         refresh_token = response.data.pop("refresh", None)
         if refresh_token:
-            _set_refresh_cookie(response, refresh_token)
+            remember = _parse_remember(request.data.get("remember", True))
+            # inyectamos el claim "remember" en el refresh token para que la
+            # persistencia sobreviva a la rotación: cada refresh nuevo re-aplica
+            # la misma cookie (7 días vs de sesión) que eligió el usuario.
+            try:
+                token = RefreshToken(refresh_token)
+                token["kmsplit_remember"] = remember
+                cookie_token = str(token)
+            except Exception:
+                cookie_token = refresh_token
+            _set_refresh_cookie(response, cookie_token, remember=remember)
 
         return response
 
@@ -135,9 +176,31 @@ class CookieTokenRefreshView(TokenRefreshView):
 
         new_refresh = data.get("refresh")  # presente porque ROTATE_REFRESH_TOKENS=True
         if new_refresh:
-            _set_refresh_cookie(response, new_refresh)
+            # preservamos la persistencia que el usuario eligió al iniciar
+            # sesión (cookie de 7 días si marcó "recordarme", de sesión si no)
+            remember = self._remember_from_token(refresh_token)
+            try:
+                token = RefreshToken(new_refresh)
+                token["kmsplit_remember"] = remember
+                cookie_token = str(token)
+            except Exception:
+                cookie_token = new_refresh
+            _set_refresh_cookie(response, cookie_token, remember=remember)
 
         return response
+
+    @staticmethod
+    def _remember_from_token(refresh_token: str) -> bool:
+        """Lee el claim "kmsplit_remember" del payload (sin validar firma/rotación)."""
+        try:
+            # JWT = header.payload.signature
+            payload = refresh_token.split(".")[1]
+            padded = payload + "=" * (-len(payload) % 4)
+            claims = json.loads(base64.urlsafe_b64decode(padded))
+            return bool(claims.get("kmsplit_remember", True))
+        except Exception:
+            # sin claim (tokens emitidos antes de esta feature): asumimos 7 días
+            return True
 
 
 class LogoutView(APIView):

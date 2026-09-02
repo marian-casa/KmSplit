@@ -117,3 +117,68 @@ class TestCookieBasedRefresh:
         # después del logout, ya no debería poder refrescar con ese cliente
         refresh_response = client.post("/api/auth/refresh/")
         assert refresh_response.status_code == 401
+
+
+class TestRememberMe:
+    def test_remember_true_sets_persistent_cookie_with_max_age(self, test_user):
+        client = APIClient()
+        response = client.post(
+            "/api/auth/login/",
+            {"email": test_user.email, "password": "testpass123", "remember": True},
+        )
+
+        assert response.status_code == 200
+        cookie = response.cookies.get("kmsplit_refresh")
+        assert cookie is not None
+        assert cookie["max-age"]  # persistente: ~7 días
+        assert int(cookie["max-age"]) == 7 * 24 * 60 * 60
+
+    def test_remember_false_sets_session_cookie_without_max_age(self, test_user):
+        client = APIClient()
+        response = client.post(
+            "/api/auth/login/",
+            {"email": test_user.email, "password": "testpass123", "remember": False},
+        )
+
+        assert response.status_code == 200
+        cookie = response.cookies.get("kmsplit_refresh")
+        assert cookie is not None
+        # sin max-age = cookie de sesión (se borra al cerrar el navegador)
+        assert not cookie.get("max-age")
+
+    def test_remember_defaults_to_true(self, test_user):
+        client = APIClient()
+        response = client.post(
+            "/api/auth/login/", {"email": test_user.email, "password": "testpass123"}
+        )
+
+        cookie = response.cookies.get("kmsplit_refresh")
+        assert cookie is not None
+        assert cookie["max-age"]
+
+    def test_refresh_preserves_persistent_cookie_if_remember_true(self, test_user):
+        client = APIClient()
+        client.post(
+            "/api/auth/login/",
+            {"email": test_user.email, "password": "testpass123", "remember": True},
+        )
+
+        response = client.post("/api/auth/refresh/")
+        assert response.status_code == 200
+        cookie = response.cookies.get("kmsplit_refresh")
+        assert cookie is not None
+        assert cookie["max-age"]
+        assert int(cookie["max-age"]) == 7 * 24 * 60 * 60
+
+    def test_refresh_preserves_session_cookie_if_remember_false(self, test_user):
+        client = APIClient()
+        client.post(
+            "/api/auth/login/",
+            {"email": test_user.email, "password": "testpass123", "remember": False},
+        )
+
+        response = client.post("/api/auth/refresh/")
+        assert response.status_code == 200
+        cookie = response.cookies.get("kmsplit_refresh")
+        assert cookie is not None
+        assert not cookie.get("max-age")
