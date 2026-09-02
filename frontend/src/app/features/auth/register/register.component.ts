@@ -33,6 +33,8 @@ export class RegisterComponent {
 
   loading = signal(false);
   errorMessage = signal<string | null>(null);
+  showPassword = signal(false);
+  showConfirmPassword = signal(false);
 
   form = this.fb.nonNullable.group(
     {

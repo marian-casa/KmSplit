@@ -23,6 +23,7 @@ export class LoginComponent {
   loading = signal(false);
   errorMessage = signal<string | null>(null);
   lockoutSeconds = signal<number | null>(null);
+  showPassword = signal(false);
 
   form = this.fb.nonNullable.group({
     email: ['', [Validators.required, Validators.email]],
