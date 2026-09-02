@@ -1,6 +1,8 @@
 export interface LoginRequest {
   email: string;
   password: string;
+  /** "Recordarme": mantiene la sesión ~7 días deslizantes (cookie persistente). */
+  remember?: boolean;
 }
 
 export interface RegisterRequest {

@@ -28,6 +28,7 @@ export class LoginComponent {
   form = this.fb.nonNullable.group({
     email: ['', [Validators.required, Validators.email]],
     password: ['', [Validators.required]],
+    rememberMe: [true],
   });
 
   submit(): void {
@@ -39,7 +40,9 @@ export class LoginComponent {
     this.loading.set(true);
     this.errorMessage.set(null);
 
-    this.auth.login(this.form.getRawValue()).subscribe({
+    const { email, password, rememberMe } = this.form.getRawValue();
+
+    this.auth.login({ email, password, remember: rememberMe }).subscribe({
       next: () => {
         this.auth.fetchMe().subscribe({
           next: () => {

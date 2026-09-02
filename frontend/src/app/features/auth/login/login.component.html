@@ -72,7 +72,20 @@
       }
     </div>
 
-    <a class="link forgot-link" routerLink="/recuperar-contrasena">¿Olvidaste tu contraseña?</a>
+    <div class="login-options">
+      <label class="remember-label">
+        <input
+          type="checkbox"
+          formControlName="rememberMe"
+          class="remember-checkbox"
+        />
+        <span class="remember-text">
+          Mantener sesión iniciada
+        </span>
+      </label>
+      
+    </div>
+    
 
     @if (errorMessage()) {
       <p class="field-error login-error">{{ errorMessage() }}</p>
@@ -93,6 +106,7 @@
         Iniciar sesión
       }
     </button>
+    <a class="link forgot-link" routerLink="/recuperar-contrasena">¿Olvidaste tu contraseña?</a>
   </form>
 
   <div class="login-footer">
