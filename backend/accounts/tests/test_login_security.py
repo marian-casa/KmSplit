@@ -182,3 +182,41 @@ class TestRememberMe:
         cookie = response.cookies.get("kmsplit_refresh")
         assert cookie is not None
         assert not cookie.get("max-age")
+
+
+class TestRememberMeProductionHardening:
+    def test_login_no_crash_when_samesite_none_without_secure(self, test_user, settings):
+        """Regresión: Django 5.1 lanza ValueError con SameSite=None sin Secure.
+        El login no debe convertirse en un 500 por eso nunca."""
+        settings.COOKIE_SAMESITE = "None"
+        settings.COOKIE_SECURE = False
+
+        client = APIClient()
+        response = client.post(
+            "/api/auth/login/",
+            {"email": test_user.email, "password": "testpass123"},
+        )
+
+        assert response.status_code == 200
+        cookie = response.cookies.get("kmsplit_refresh")
+        assert cookie is not None
+        # con SameSite=None sin Secure se degrada a Lax en vez de reventar
+        assert cookie["samesite"].lower() == "lax"
+
+    def test_login_sets_secure_samesite_none_cookie_in_production(self, test_user, settings):
+        """Config de producción típica: SameSite=None + Secure para cross-site
+        (frontend en Vercel, backend en Railway) con credenciales cross-origin."""
+        settings.COOKIE_SAMESITE = "None"
+        settings.COOKIE_SECURE = True
+
+        client = APIClient()
+        response = client.post(
+            "/api/auth/login/",
+            {"email": test_user.email, "password": "testpass123", "remember": False},
+        )
+
+        assert response.status_code == 200
+        cookie = response.cookies.get("kmsplit_refresh")
+        assert cookie is not None
+        assert cookie["samesite"].lower() == "none"
+        assert cookie["secure"]
