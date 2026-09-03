@@ -28,7 +28,13 @@
               [class.is-last]="vehicle.id === lastVehicleId"
               [routerLink]="['/vehiculo', vehicle.id]"
             >
-              <div class="vehicle-avatar">🚗</div>
+              <div class="vehicle-avatar">
+                @if (vehicle.photo_url) {
+                  <img [src]="vehicle.photo_url" alt="Foto del vehículo" />
+                } @else {
+                  🚗
+                }
+              </div>
               <div class="vehicle-info">
                 <p class="vehicle-name">{{ vehicle.name }}</p>
                 <p class="muted">{{ vehicle.current_km | argNumber }} km actuales</p>
