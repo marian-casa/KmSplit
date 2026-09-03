@@ -29,6 +29,23 @@ class TestVehiclePermissions:
         })
         assert response.status_code == 201
 
+    def test_member_cannot_update_vehicle(self, family, vehicle):
+        client = auth_client(family["member"])
+        response = client.patch(f"/api/vehicles/{vehicle.id}/", {"name": "Nuevo nombre"})
+        assert response.status_code == 403
+
+    def test_admin_can_update_vehicle(self, family, vehicle):
+        client = auth_client(family["admin"])
+        response = client.patch(f"/api/vehicles/{vehicle.id}/", {"name": "Auto nuevo"})
+        assert response.status_code == 200
+        assert response.data["name"] == "Auto nuevo"
+
+    def test_owner_can_update_km(self, family, vehicle):
+        client = auth_client(family["owner"])
+        response = client.patch(f"/api/vehicles/{vehicle.id}/", {"current_km": 5000})
+        assert response.status_code == 200
+        assert response.data["current_km"] == 5000
+
 
 class TestTripPermissions:
     def test_member_cannot_edit_others_trip(self, family, vehicle):

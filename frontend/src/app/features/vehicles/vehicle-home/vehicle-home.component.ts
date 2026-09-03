@@ -2,8 +2,9 @@ import { CommonModule } from '@angular/common';
 import { Component, inject, signal } from '@angular/core';
 import { ActivatedRoute, RouterLink } from '@angular/router';
 
-import { Group } from '../../../core/models/group.model';
+import { Group, GroupMembership, GroupRole } from '../../../core/models/group.model';
 import { Vehicle } from '../../../core/models/vehicle.model';
+import { AuthService } from '../../../core/services/auth.service';
 import { GroupService } from '../../../core/services/group.service';
 import { VehicleService } from '../../../core/services/vehicle.service';
 import { BottomNavComponent } from '../../../shared/bottom-nav/bottom-nav.component';
@@ -21,6 +22,7 @@ export class VehicleHomeComponent {
   private route = inject(ActivatedRoute);
   private vehicleService = inject(VehicleService);
   private groupService = inject(GroupService);
+  private auth = inject(AuthService);
 
   vehicleId = Number(this.route.snapshot.paramMap.get('id'));
 
@@ -30,28 +32,42 @@ export class VehicleHomeComponent {
   errorMessage = signal<string | null>(null);
   photoSaving = signal(false);
   photoMessage = signal<string | null>(null);
+  currentUserId = 0;
+  myRole = signal<GroupRole | null>(null);
 
   constructor() {
-    this.vehicleService.get(this.vehicleId).subscribe({
-      next: (vehicle) => {
-        this.vehicleService.setLastVehicleId(vehicle.id);
-        // el grupo del vehículo pasa a ser el "activo" para que el botón
-        // volver (‹) te devuelva siempre a la lista de su grupo
-        this.groupService.setActiveGroupId(vehicle.group);
-        this.vehicle.set(vehicle);
-        this.groupService.get(vehicle.group).subscribe({
-          next: (group) => {
-            this.group.set(group);
-            this.loading.set(false);
-          },
-          error: () => this.loading.set(false),
-        });
-      },
-      error: () => {
-        this.errorMessage.set('No pudimos cargar este vehículo.');
-        this.loading.set(false);
-      },
+    this.auth.fetchMe().subscribe((user) => {
+      this.currentUserId = user.id;
+
+      this.vehicleService.get(this.vehicleId).subscribe({
+        next: (vehicle) => {
+          this.vehicleService.setLastVehicleId(vehicle.id);
+          // el grupo del vehículo pasa a ser el "activo" para que el botón
+          // volver (‹) te devuelva siempre a la lista de su grupo
+          this.groupService.setActiveGroupId(vehicle.group);
+          this.vehicle.set(vehicle);
+          this.groupService.get(vehicle.group).subscribe({
+            next: (group) => {
+              this.group.set(group);
+              const membership = group.members.find(
+                (m) => m.user === this.currentUserId,
+              );
+              this.myRole.set(membership?.role ?? null);
+              this.loading.set(false);
+            },
+            error: () => this.loading.set(false),
+          });
+        },
+        error: () => {
+          this.errorMessage.set('No pudimos cargar este vehículo.');
+          this.loading.set(false);
+        },
+      });
     });
+  }
+
+  get canManage(): boolean {
+    return this.myRole() === 'owner' || this.myRole() === 'admin';
   }
 
   onFileSelected(event: Event): void {

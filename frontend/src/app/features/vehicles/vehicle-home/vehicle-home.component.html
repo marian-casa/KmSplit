@@ -10,25 +10,39 @@
   } @else if (errorMessage()) {
     <p class="field-error">{{ errorMessage() }}</p>
   } @else {
-    <label class="vehicle-photo" [class.has-photo]="!!vehicle()!.photo_url">
+    <label
+      class="vehicle-photo"
+      [class.has-photo]="!!vehicle()!.photo_url"
+      [class.editable]="canManage"
+    >
       @if (vehicle()!.photo_url) {
         <img [src]="vehicle()!.photo_url" alt="Foto del vehículo" />
-        <span class="vehicle-photo-overlay">Cambiar foto</span>
+        @if (canManage) {
+          <span class="vehicle-photo-overlay">Cambiar foto</span>
+        }
       } @else {
         <span class="vehicle-photo-placeholder">🚗<br />Foto del auto (opcional)</span>
       }
-      <input
-        type="file"
-        accept="image/*"
-        class="vehicle-photo-input"
-        (change)="onFileSelected($event)"
-        [attr.aria-label]="'Subir foto del auto'"
-      />
+      @if (canManage) {
+        <input
+          type="file"
+          accept="image/*"
+          class="vehicle-photo-input"
+          (change)="onFileSelected($event)"
+          [attr.aria-label]="'Subir foto del auto'"
+        />
+      }
     </label>
+
+    @if (!canManage && !vehicle()!.photo_url) {
+      <p class="muted vehicle-photo-admin-needed">
+        Solo el administrador del grupo puede agregar la foto del auto.
+      </p>
+    }
 
     @if (photoSaving()) {
       <p class="muted vehicle-photo-status">Guardando foto...</p>
-    } @else if (vehicle()!.photo_url && !photoMessage()) {
+    } @else if (canManage && vehicle()!.photo_url && !photoMessage()) {
       <button class="link vehicle-photo-remove" type="button" (click)="removePhoto()">
         Quitar foto
       </button>
