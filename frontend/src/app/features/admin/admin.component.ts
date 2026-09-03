@@ -54,6 +54,9 @@ export class AdminComponent {
   confirmDialog = signal<boolean>(false);
   kmWarning = signal(false);
 
+  removeDialog = signal<boolean>(false);
+  memberToRemove = signal<GroupMembership | null>(null);
+
   currentUserId = 0;
   myRole = signal<GroupRole | null>(null);
 
@@ -236,11 +239,17 @@ export class AdminComponent {
   }
 
   removeMember(member: GroupMembership): void {
+    this.memberToRemove.set(member);
+    this.removeDialog.set(true);
+  }
+
+  confirmRemoveMember(): void {
+    const member = this.memberToRemove();
     const group = this.group();
-    if (!group) return;
+    if (!member || !group) return;
 
-    if (!confirm(`¿Dar de baja a ${member.user_name} del grupo?`)) return;
-
+    this.removeDialog.set(false);
+    this.memberToRemove.set(null);
     this.memberActionError.set(null);
 
     this.groupService.updateMember(group.id, member.user, { remove: true }).subscribe({
@@ -249,6 +258,11 @@ export class AdminComponent {
         this.memberActionError.set(err.error?.detail ?? 'No pudimos dar de baja al integrante.');
       },
     });
+  }
+
+  cancelRemoveMember(): void {
+    this.removeDialog.set(false);
+    this.memberToRemove.set(null);
   }
 
   roleLabel(role: GroupRole): string {
