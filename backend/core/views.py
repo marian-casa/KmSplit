@@ -141,6 +141,18 @@ class VehicleViewSet(viewsets.ModelViewSet):
             raise PermissionDenied("Solo el owner o admin puede crear vehículos")
         serializer.save()
 
+    def perform_update(self, serializer):
+        # Editar los datos del vehículo (nombre, combustible, foto, km actuales)
+        # es tarea del owner/admin. Los members pueden ver pero no modificar.
+        membership = get_membership(
+            self.request.user, serializer.instance.group
+        )
+        if membership is None or membership.role not in ("owner", "admin"):
+            raise PermissionDenied(
+                "Necesitás ser administrador para modificar los datos del vehículo."
+            )
+        serializer.save()
+
 
 class TripViewSet(viewsets.ModelViewSet):
     serializer_class = TripSerializer

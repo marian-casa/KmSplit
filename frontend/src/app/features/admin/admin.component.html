@@ -11,7 +11,93 @@
     <p class="field-error">{{ errorMessage() }}</p>
   } @else {
     <div class="section-title">Vehículo</div>
-    <div class="settings-card">
+    @if (!canManage) {
+      <div class="admin-required">
+        <span class="admin-required-icon">🔒</span>
+        <p>Necesitás ser administrador del grupo para modificar estos campos.</p>
+      </div>
+    }
+    @if (canManage) {
+      <form
+        class="settings-card vehicle-edit-form"
+        [formGroup]="form"
+      >
+        <div class="field-group">
+          <label class="settings-label" for="vehicle-name">Nombre del auto</label>
+          <input
+            id="vehicle-name"
+            class="field"
+            formControlName="name"
+            type="text"
+            maxlength="150"
+            [placeholder]="vehicle()!.name"
+          />
+          @if (form.controls.name.invalid && form.controls.name.touched) {
+            <p class="field-error">El nombre es obligatorio.</p>
+          }
+        </div>
+
+        <div class="field-group">
+          <label class="settings-label" for="vehicle-fuel">Combustible</label>
+          <select id="vehicle-fuel" class="select-field" formControlName="fuel_type">
+            <option value="">Sin especificar</option>
+            @for (fuel of fuelTypes; track fuel.value) {
+              <option [value]="fuel.value">{{ fuel.label }}</option>
+            }
+          </select>
+        </div>
+
+        <div class="field-group">
+          <label class="settings-label" for="vehicle-km">Km actuales (odómetro)</label>
+          <input
+            id="vehicle-km"
+            class="field"
+            formControlName="current_km"
+            type="number"
+            min="0"
+            step="1"
+            [placeholder]="vehicle()!.current_km"
+          />
+          <p class="muted settings-hint">
+            Es el km de la última carga/liquidación, o el que pusiste al crear el
+            vehículo. Se toma como base para la próxima.
+          </p>
+        </div>
+
+        <button
+          class="btn"
+          type="button"
+          (click)="requestSaveVehicle()"
+          [disabled]="savingVehicle()"
+        >
+          @if (savingVehicle()) {
+            Guardando...
+          } @else {
+            Guardar cambios
+          }
+        </button>
+        @if (vehicleSaved()) {
+          <p class="saved-hint">✓ Cambios guardados</p>
+        }
+      </form>
+    } @else {
+      <div class="settings-card vehicle-view-card">
+        <div class="view-row">
+          <span class="settings-label">Nombre</span>
+          <span class="view-value">{{ vehicle()!.name }}</span>
+        </div>
+        <div class="view-row">
+          <span class="settings-label">Combustible</span>
+          <span class="view-value">{{ fuelLabel(vehicle()!.fuel_type) }}</span>
+        </div>
+        <div class="view-row">
+          <span class="settings-label">Km actuales</span>
+          <span class="view-value">{{ vehicle()!.current_km }} km</span>
+        </div>
+      </div>
+    }
+
+    <div class="settings-card split-card">
       <div class="settings-row">
         <div>
           <p class="settings-label">Repartir km sin asignar entre todos</p>
@@ -25,18 +111,29 @@
             }
           </p>
         </div>
-        <label class="switch">
+        <label class="switch" [class.switch--disabled]="!canManage">
           <input
             type="checkbox"
             [checked]="vehicle()!.split_unassigned_km_all_members"
             (change)="toggleSplit()"
-            [disabled]="savingToggle()"
+            [disabled]="!canManage || savingToggle()"
           />
           <span class="switch-slider"></span>
         </label>
       </div>
+      @if (!canManage) {
+        <p class="settings-hint split-locked">
+          🔒 Solo el administrador del grupo puede cambiar esta opción.
+        </p>
+      }
+      @if (toggleError()) {
+        <p class="field-error">{{ toggleError() }}</p>
+      }
       @if (toggleSaved()) {
         <p class="saved-hint">✓ Guardado</p>
+      }
+      @if (savingToggle()) {
+        <p class="muted settings-hint">Guardando...</p>
       }
     </div>
 
@@ -55,7 +152,7 @@
       <p class="field-error">{{ memberActionError() }}</p>
     }
     <div class="members-list">
-      @for (member of group()!.members; track member.id) {
+      @for (member of activeMembers; track member.id) {
         <div class="member-row">
           <div>
             <p class="member-name">
@@ -85,3 +182,28 @@
 
   <app-bottom-nav [vehicleId]="vehicleId" />
 </div>
+
+@if (confirmDialog()) {
+  <div class="dialog-overlay" (click)="cancelSaveVehicle()">
+    <div class="confirm-dialog" role="dialog" aria-modal="true">
+      <h2 class="dialog-title">Guardar cambios</h2>
+      @if (kmWarning()) {
+        <p class="dialog-warning">
+          ⚠️ Cambiaste el kilometraje actual. Los km registrados que no se hayan
+          liquidado/facturado antes de
+          <strong>{{ form.get('current_km')?.value }}</strong> km no van a ser
+          tenidos en cuenta en la próxima liquidación.
+        </p>
+      }
+      <p class="dialog-text">¿Confirmás guardar estos cambios?</p>
+      <div class="dialog-actions">
+        <button class="btn dialog-btn-no" type="button" (click)="cancelSaveVehicle()">
+          No
+        </button>
+        <button class="btn btn-confirm" type="button" (click)="confirmSaveVehicle()">
+          Sí, guardar
+        </button>
+      </div>
+    </div>
+  </div>
+}

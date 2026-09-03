@@ -1,9 +1,10 @@
 import { CommonModule } from '@angular/common';
 import { Component, inject, signal } from '@angular/core';
+import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { ActivatedRoute, RouterLink } from '@angular/router';
 
 import { Group, GroupMembership, GroupRole } from '../../core/models/group.model';
-import { Vehicle } from '../../core/models/vehicle.model';
+import { FuelType, Vehicle } from '../../core/models/vehicle.model';
 import { AuthService } from '../../core/services/auth.service';
 import { GroupService } from '../../core/services/group.service';
 import { VehicleService } from '../../core/services/vehicle.service';
@@ -12,12 +13,13 @@ import { BottomNavComponent } from '../../shared/bottom-nav/bottom-nav.component
 @Component({
   selector: 'app-admin',
   standalone: true,
-  imports: [CommonModule, RouterLink, BottomNavComponent],
+  imports: [CommonModule, ReactiveFormsModule, RouterLink, BottomNavComponent],
   templateUrl: './admin.component.html',
   styleUrl: './admin.component.scss',
 })
 export class AdminComponent {
   private route = inject(ActivatedRoute);
+  private fb = inject(FormBuilder);
   private vehicleService = inject(VehicleService);
   private groupService = inject(GroupService);
   private auth = inject(AuthService);
@@ -30,11 +32,38 @@ export class AdminComponent {
   errorMessage = signal<string | null>(null);
   savingToggle = signal(false);
   toggleSaved = signal(false);
+  toggleError = signal<string | null>(null);
   codeCopied = signal(false);
   memberActionError = signal<string | null>(null);
+  savingVehicle = signal(false);
+  vehicleSaved = signal(false);
+
+  fuelTypes: { value: FuelType; label: string }[] = [
+    { value: 'nafta', label: 'Nafta' },
+    { value: 'diesel', label: 'Diésel' },
+    { value: 'gnc', label: 'GNC' },
+    { value: 'electrico', label: 'Eléctrico' },
+  ];
+
+  form = this.fb.nonNullable.group({
+    name: ['', Validators.required],
+    fuel_type: ['' as FuelType],
+    current_km: [null as number | null, [Validators.min(0)]],
+  });
+
+  confirmDialog = signal<boolean>(false);
+  kmWarning = signal(false);
 
   currentUserId = 0;
   myRole = signal<GroupRole | null>(null);
+
+  get canManage(): boolean {
+    return this.myRole() === 'owner' || this.myRole() === 'admin';
+  }
+
+  get activeMembers(): GroupMembership[] {
+    return (this.group()?.members ?? []).filter((m) => m.is_active);
+  }
 
   constructor() {
     this.auth.fetchMe().subscribe((user) => {
@@ -43,6 +72,11 @@ export class AdminComponent {
       this.vehicleService.get(this.vehicleId).subscribe({
         next: (vehicle) => {
           this.vehicle.set(vehicle);
+          this.form.patchValue({
+            name: vehicle.name,
+            fuel_type: vehicle.fuel_type,
+            current_km: vehicle.current_km,
+          });
           this.loadGroup(vehicle.group);
         },
         error: () => {
@@ -72,8 +106,16 @@ export class AdminComponent {
     const vehicle = this.vehicle();
     if (!vehicle) return;
 
+    if (!this.canManage) {
+      this.toggleError.set(
+        'Solo el administrador del grupo puede cambiar esta opción.',
+      );
+      return;
+    }
+
     this.savingToggle.set(true);
     this.toggleSaved.set(false);
+    this.toggleError.set(null);
 
     this.vehicleService
       .update(vehicle.id, {
@@ -87,9 +129,68 @@ export class AdminComponent {
         },
         error: () => {
           this.savingToggle.set(false);
-          this.errorMessage.set('No pudimos guardar el cambio.');
+          this.toggleError.set('No pudimos guardar el cambio.');
         },
       });
+  }
+
+  requestSaveVehicle(): void {
+    const vehicle = this.vehicle();
+    if (!vehicle || this.form.invalid) {
+      this.form.markAllAsTouched();
+      return;
+    }
+
+    // detectamos qué cambió para decidir el aviso del diálogo
+    const { name, fuel_type, current_km } = this.form.getRawValue();
+    const kmChanged =
+      current_km !== null && Number(current_km) !== vehicle.current_km;
+
+    this.kmWarning.set(kmChanged);
+    this.confirmDialog.set(true);
+  }
+
+  confirmSaveVehicle(): void {
+    const vehicle = this.vehicle();
+    if (!vehicle) return;
+
+    this.confirmDialog.set(false);
+    this.savingVehicle.set(true);
+    this.vehicleSaved.set(false);
+    this.errorMessage.set(null);
+
+    const { name, fuel_type, current_km } = this.form.getRawValue();
+
+    this.vehicleService
+      .update(vehicle.id, {
+        name,
+        fuel_type: fuel_type || undefined,
+        // solo reenviamos km si el usuario lo cambió
+        ...(current_km !== null
+          ? { current_km: current_km }
+          : {}),
+      })
+      .subscribe({
+        next: (updated) => {
+          this.vehicle.set(updated);
+          this.savingVehicle.set(false);
+          this.vehicleSaved.set(true);
+        },
+        error: (err) => {
+          this.savingVehicle.set(false);
+          this.errorMessage.set(
+            err.error?.detail ?? 'No pudimos guardar los cambios.',
+          );
+        },
+      });
+  }
+
+  cancelSaveVehicle(): void {
+    this.confirmDialog.set(false);
+  }
+
+  fuelLabel(value: FuelType): string {
+    return this.fuelTypes.find((f) => f.value === value)?.label ?? 'Sin especificar';
   }
 
   copyInviteCode(): void {

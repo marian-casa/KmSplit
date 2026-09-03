@@ -8,10 +8,13 @@
   justify-content: center;
   overflow: hidden;
   margin-bottom: 10px;
-  cursor: pointer;
 
-  &:focus-within {
-    outline: 2px solid var(--blue-400);
+  &.editable {
+    cursor: pointer;
+
+    &:focus-within {
+      outline: 2px solid var(--blue-400);
+    }
   }
 
   img {
@@ -35,8 +38,8 @@
   transition: opacity 0.15s ease;
 }
 
-.vehicle-photo:hover .vehicle-photo-overlay,
-.vehicle-photo:focus-within .vehicle-photo-overlay {
+.vehicle-photo.editable:hover .vehicle-photo-overlay,
+.vehicle-photo.editable:focus-within .vehicle-photo-overlay {
   opacity: 1;
 }
 
@@ -54,6 +57,11 @@
   font-size: 13px;
   text-align: center;
   line-height: 1.6;
+}
+
+.vehicle-photo-admin-needed {
+  margin: 0 0 12px;
+  font-size: 12px;
 }
 
 .vehicle-photo-remove {

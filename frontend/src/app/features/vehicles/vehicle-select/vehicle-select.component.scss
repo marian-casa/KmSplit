@@ -106,7 +106,7 @@
   // con foto: el contenedor se adapta a la proporción real (horizontal o
   // vertical) y muestra la imagen completa sin recortar
   &.has-photo {
-    width: 64px;
+    width: 84px;
     height: auto;
     border-radius: 12px;
     background: transparent;
@@ -114,7 +114,7 @@
     img {
       width: 100%;
       height: auto;
-      max-height: 96px;
+      max-height: 84px;
       display: block;
       object-fit: contain;
     }
