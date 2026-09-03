@@ -1,6 +1,6 @@
 .vehicle-photo {
   position: relative;
-  height: 140px;
+  height: 200px;
   border-radius: var(--radius);
   background: var(--gray-100);
   display: flex;
@@ -58,7 +58,8 @@
 
 .vehicle-photo-remove {
   align-self: flex-start;
-  margin-bottom: 8px;
+  margin-bottom: 10px;
+  padding: 3px;
 }
 
 .vehicle-photo-status {
