@@ -172,7 +172,7 @@
               <button class="link" type="button" (click)="changeRole(member, 'member')">Quitar admin</button>
             }
             @if (canRemove(member)) {
-              <button class="link link-danger" type="button" (click)="removeMember(member)">Quitar</button>
+              <button class="link link-danger" type="button" (click)="removeMember(member)">Eliminar</button>
             }
           </div>
         </div>
@@ -202,6 +202,28 @@
         </button>
         <button class="btn btn-confirm" type="button" (click)="confirmSaveVehicle()">
           Sí, guardar
+        </button>
+      </div>
+    </div>
+  </div>
+}
+
+@if (removeDialog()) {
+  <div class="dialog-overlay" (click)="cancelRemoveMember()">
+    <div class="confirm-dialog" role="dialog" aria-modal="true">
+      <h2 class="dialog-title">Eliminar integrante</h2>
+      <p class="dialog-text">
+        ¿Estás seguro de eliminar a
+        <strong>&quot;{{ memberToRemove()!.user_name }}&quot;</strong> del Grupo
+        <strong>&quot;{{ group()!.name }}&quot;</strong> de manera definitiva?
+      </p>
+      <p class="dialog-warning">Esta acción no se puede deshacer.</p>
+      <div class="dialog-actions">
+        <button class="btn dialog-btn-no" type="button" (click)="cancelRemoveMember()">
+          Cancelar
+        </button>
+        <button class="btn btn-danger" type="button" (click)="confirmRemoveMember()">
+          Sí, eliminar
         </button>
       </div>
     </div>

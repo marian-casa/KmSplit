@@ -308,8 +308,17 @@
 
 .dialog-btn-no {
   background: var(--white);
-  color: var(--red);
-  border: 1.5px solid var(--red);
+  color: var(--blue-500);
+  border: 1.5px solid var(--blue-500);
+}
+
+.btn-danger {
+  background: var(--red);
+  color: var(--white);
+
+  &:hover:not(:disabled) {
+    background: #c0392b;
+  }
 }
 
 .btn-confirm {
