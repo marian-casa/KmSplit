@@ -28,7 +28,10 @@
               [class.is-last]="vehicle.id === lastVehicleId"
               [routerLink]="['/vehiculo', vehicle.id]"
             >
-              <div class="vehicle-avatar">
+              <div
+                class="vehicle-avatar"
+                [class.has-photo]="!!vehicle.photo_url"
+              >
                 @if (vehicle.photo_url) {
                   <img [src]="vehicle.photo_url" alt="Foto del vehículo" />
                 } @else {
