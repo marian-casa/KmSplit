@@ -1,4 +1,5 @@
 .vehicle-photo {
+  position: relative;
   height: 140px;
   border-radius: var(--radius);
   background: var(--gray-100);
@@ -7,6 +8,11 @@
   justify-content: center;
   overflow: hidden;
   margin-bottom: 10px;
+  cursor: pointer;
+
+  &:focus-within {
+    outline: 2px solid var(--blue-400);
+  }
 
   img {
     width: 100%;
@@ -15,11 +21,50 @@
   }
 }
 
+.vehicle-photo-overlay {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(0, 0, 0, 0.45);
+  color: #fff;
+  font-size: 13px;
+  font-weight: 600;
+  opacity: 0;
+  transition: opacity 0.15s ease;
+}
+
+.vehicle-photo:hover .vehicle-photo-overlay,
+.vehicle-photo:focus-within .vehicle-photo-overlay {
+  opacity: 1;
+}
+
+.vehicle-photo-input {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  opacity: 0;
+  overflow: hidden;
+  pointer-events: none;
+}
+
 .vehicle-photo-placeholder {
   color: var(--gray-500);
   font-size: 13px;
   text-align: center;
   line-height: 1.6;
+}
+
+.vehicle-photo-remove {
+  align-self: flex-start;
+  margin-bottom: 8px;
+}
+
+.vehicle-photo-status {
+  margin: 0 0 16px;
+  font-size: 12.5px;
+  color: var(--green);
 }
 
 .vehicle-meta {

@@ -10,13 +10,34 @@
   } @else if (errorMessage()) {
     <p class="field-error">{{ errorMessage() }}</p>
   } @else {
-    <div class="vehicle-photo">
+    <label class="vehicle-photo" [class.has-photo]="!!vehicle()!.photo_url">
       @if (vehicle()!.photo_url) {
         <img [src]="vehicle()!.photo_url" alt="Foto del vehículo" />
+        <span class="vehicle-photo-overlay">Cambiar foto</span>
       } @else {
         <span class="vehicle-photo-placeholder">🚗<br />Foto del auto (opcional)</span>
       }
-    </div>
+      <input
+        type="file"
+        accept="image/*"
+        class="vehicle-photo-input"
+        (change)="onFileSelected($event)"
+        [attr.aria-label]="'Subir foto del auto'"
+      />
+    </label>
+
+    @if (photoSaving()) {
+      <p class="muted vehicle-photo-status">Guardando foto...</p>
+    } @else if (vehicle()!.photo_url && !photoMessage()) {
+      <button class="link vehicle-photo-remove" type="button" (click)="removePhoto()">
+        Quitar foto
+      </button>
+    }
+    @if (photoMessage()) {
+      <p class="vehicle-photo-status" [class.field-error]="photoMessage()!.length > 0">
+        {{ photoMessage() }}
+      </p>
+    }
 
     <p class="muted vehicle-meta">
       {{ vehicle()!.current_km | argNumber }} km en la última carga

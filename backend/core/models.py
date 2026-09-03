@@ -86,7 +86,7 @@ class Vehicle(models.Model):
     group = models.ForeignKey(Group, on_delete=models.CASCADE, related_name="vehicles")
     name = models.CharField(max_length=150)
     fuel_type = models.CharField(max_length=20, choices=FUEL_TYPE_CHOICES, blank=True)
-    photo_url = models.URLField(blank=True)
+    photo_url = models.TextField(blank=True)
     current_km = models.PositiveIntegerField(
         default=0, help_text="Cache del último km conocido, base para el atajo de 3 dígitos"
     )
