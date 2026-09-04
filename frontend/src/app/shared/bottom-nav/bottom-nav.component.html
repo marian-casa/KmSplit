@@ -16,7 +16,7 @@
     <span class="nav-icon">⛽</span>
     <span>Carga</span>
   </a>
-  <a class="nav-item" [routerLink]="['/vehiculo', vehicleId, 'resumen']" routerLinkActive="active">
+  <a class="nav-item" [routerLink]="['/vehiculo', vehicleId, 'resumen']" [class.active]="isResumenActive()">
     <span class="nav-icon">📊</span>
     <span>Resumen</span>
   </a>

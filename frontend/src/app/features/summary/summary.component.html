@@ -37,10 +37,10 @@
 
     <div class="quick-links">
       <a class="btn btn-secondary" [routerLink]="['/vehiculo', vehicleId, 'historial', 'semana']">
-        Ver semana
+        Últimos 7 días
       </a>
       <a class="btn btn-secondary" [routerLink]="['/vehiculo', vehicleId, 'historial']">
-        Historial completo
+        Historial
       </a>
     </div>
 
@@ -52,7 +52,7 @@
         [class.active]="selectedPeriod() === 'semana'"
         (click)="selectedPeriod.set('semana')"
       >
-        Semana
+        7 días
       </button>
       <button
         class="tab"
@@ -60,7 +60,7 @@
         [class.active]="selectedPeriod() === 'mes'"
         (click)="selectedPeriod.set('mes')"
       >
-        Mes
+        1 mes
       </button>
       <button
         class="tab"

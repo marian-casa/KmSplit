@@ -1,5 +1,5 @@
-import { Component, Input } from '@angular/core';
-import { RouterLink, RouterLinkActive } from '@angular/router';
+import { Component, Input, inject } from '@angular/core';
+import { Router, RouterLink, RouterLinkActive } from '@angular/router';
 
 @Component({
   selector: 'app-bottom-nav',
@@ -10,4 +10,10 @@ import { RouterLink, RouterLinkActive } from '@angular/router';
 })
 export class BottomNavComponent {
   @Input({ required: true }) vehicleId!: number;
+  private router = inject(Router);
+  isResumenActive(): boolean {
+    const url = this.router.url;
+    const segments = ['/resumen', '/historial', '/historial/semana'];
+    return segments.some((s) => url.includes(s));
+  }
 }

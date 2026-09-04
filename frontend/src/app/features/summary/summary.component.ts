@@ -57,12 +57,12 @@ export class SummaryComponent {
 
   private periodDays: Record<PeriodKey, number> = { semana: 7, mes: 30, '3meses': 90 };
   private colors = [
-    'var(--blue-500)',
+    'var(--blue-700)',
     'var(--green)',
     'var(--amber)',
     'var(--blue-400)',
-    '#9b6fd6',
-    '#e0637a',
+    'var(--purple)',
+    'var(--red-pink)',
   ];
 
   constructor() {
