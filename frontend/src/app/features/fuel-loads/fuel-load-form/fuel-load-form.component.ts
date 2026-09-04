@@ -3,7 +3,10 @@ import { Component, inject, signal } from '@angular/core';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 
+import { Settlement } from '../../../core/models/settlement.model';
 import { FuelLoadService } from '../../../core/services/fuel-load.service';
+import { SettlementService } from '../../../core/services/settlement.service';
+import { formatKm } from '../../../core/utils/format-args';
 import { BottomNavComponent } from '../../../shared/bottom-nav/bottom-nav.component';
 
 @Component({
@@ -18,11 +21,53 @@ export class FuelLoadFormComponent {
   private route = inject(ActivatedRoute);
   private router = inject(Router);
   private fuelLoadService = inject(FuelLoadService);
+  private settlementService = inject(SettlementService);
 
   vehicleId = Number(this.route.snapshot.paramMap.get('id'));
 
   loading = signal(false);
   errorMessage = signal<string | null>(null);
+
+  readonly settlementPageSize = 5;
+  settlements = signal<Settlement[]>([]);
+  settlementsVisible = signal(3);
+  settlementsLoading = signal(true);
+
+  constructor() {
+    this.settlementService.listByVehicle(this.vehicleId).subscribe({
+      next: (list) => {
+        const sorted = list
+          .slice()
+          .sort((a, b) => b.id - a.id)
+          .slice(0, 3 + this.settlementPageSize);
+        this.settlements.set(sorted);
+        this.settlementsLoading.set(false);
+      },
+      error: () => {
+        this.settlementsLoading.set(false);
+      },
+    });
+  }
+
+  get visibleSettlements(): Settlement[] {
+    return this.settlements().slice(0, this.settlementsVisible());
+  }
+
+  get hasMoreSettlements(): boolean {
+    return this.settlementsVisible() < this.settlements().length;
+  }
+
+  loadMoreSettlements(): void {
+    this.settlementsVisible.update((v) => v + this.settlementPageSize);
+  }
+
+  settlementLabel(s: Settlement): string {
+    return `${formatKm(s.period_start_km)} → ${formatKm(s.period_end_km)} km · $${s.total_amount}`;
+  }
+
+  goToSettlement(id: number): void {
+    this.router.navigate(['/vehiculo', this.vehicleId, 'liquidacion', id]);
+  }
 
   form = this.fb.nonNullable.group({
     load_date: [this.today(), Validators.required],

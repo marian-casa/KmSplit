@@ -57,5 +57,35 @@
     </button>
   </form>
 
+  <section class="liquidacion-section">
+    <h2 class="section-title">Liquidación</h2>
+
+    @if (settlementsLoading()) {
+      <p class="muted">Cargando...</p>
+    } @else if (settlements().length === 0) {
+      <p class="muted">Todavía no hay liquidaciones.</p>
+    } @else {
+      <div class="settlement-list">
+        @for (settlement of visibleSettlements; track settlement.id) {
+          <button
+            class="settlement-row"
+            type="button"
+            (click)="goToSettlement(settlement.id)"
+          >
+            <span class="settlement-status">{{ settlement.status === 'pagado' ? '✅' : '⏳' }}</span>
+            <span class="settlement-label">{{ settlementLabel(settlement) }}</span>
+            <span class="edit-hint">👁️</span>
+          </button>
+        }
+      </div>
+
+      @if (hasMoreSettlements) {
+        <button class="btn btn-secondary" type="button" (click)="loadMoreSettlements()">
+          Desplegar más
+        </button>
+      }
+    }
+  </section>
+
   <app-bottom-nav [vehicleId]="vehicleId" />
 </div>

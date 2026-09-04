@@ -12,7 +12,11 @@
     <span class="nav-icon">📍</span>
     <span>Viaje</span>
   </a>
-  <a class="nav-item" [routerLink]="['/vehiculo', vehicleId, 'carga']" routerLinkActive="active">
+  <a
+    class="nav-item"
+    [routerLink]="['/vehiculo', vehicleId, 'carga']"
+    [class.active]="isCargaActive()"
+  >
     <span class="nav-icon">⛽</span>
     <span>Carga</span>
   </a>

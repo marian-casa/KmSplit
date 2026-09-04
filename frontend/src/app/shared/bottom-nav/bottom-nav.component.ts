@@ -16,4 +16,13 @@ export class BottomNavComponent {
     const segments = ['/resumen', '/historial', '/historial/semana'];
     return segments.some((s) => url.includes(s));
   }
+
+  /**
+   * El ítem "Carga" también engloba las liquidaciones, porque desde el form de
+   * carga se accede a ellas. Marcamos activo en azul /carga y /liquidacion/:id.
+   */
+  isCargaActive(): boolean {
+    const url = this.router.url;
+    return url.includes('/carga') || url.includes('/liquidacion');
+  }
 }
