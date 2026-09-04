@@ -3,7 +3,7 @@
     <button
       class="icon-btn"
       type="button"
-      [routerLink]="['/vehiculo', vehicleId, 'historial']"
+      [routerLink]="from === 'carga' ? ['/vehiculo', vehicleId, 'carga'] : ['/vehiculo', vehicleId, 'historial']"
       aria-label="Volver"
     >
       ‹
@@ -33,14 +33,22 @@
       </div>
 
       <div class="status-row">
-        <span class="status-badge" [class.paid]="settlement()!.status === 'pagado'">
-          {{ settlement()!.status === 'pagado' ? '✅ Pagado' : '⏳ Pendiente' }}
-        </span>
         @if (canManage()) {
-          <button class="link" type="button" (click)="toggleStatus()" [disabled]="updatingStatus()">
-            Marcar como {{ settlement()!.status === 'pendiente' ? 'pagado' : 'pendiente' }}
-          </button>
+          <div class="manage-actions">
+            <button class="edit-btn" type="button" (click)="editLoad()">Editar</button>
+            <button class="delete-btn" type="button" (click)="confirmDelete()">Eliminar</button>
+          </div>
         }
+        <div class="status-line">
+          <span class="status-badge" [class.paid]="settlement()!.status === 'pagado'">
+            {{ settlement()!.status === 'pagado' ? '✅ Pagado' : '⏳ Pendiente' }}
+          </span>
+          @if (canManage()) {
+            <button class="link" type="button" (click)="toggleStatus()" [disabled]="updatingStatus()">
+              Marcar como {{ settlement()!.status === 'pendiente' ? 'pagado' : 'pendiente' }}
+            </button>
+          }
+        </div>
       </div>
     </div>
 
@@ -61,6 +69,31 @@
           </p>
         </div>
       }
+    </div>
+  }
+
+  @if (deleteDialog()) {
+    <div class="dialog-overlay" (click)="cancelDelete()">
+      <div class="confirm-dialog" role="dialog" aria-modal="true">
+        <h2 class="dialog-title">Eliminar carga</h2>
+        <p class="dialog-text">
+          ¿Seguro que querés eliminar la carga que originó esta
+          <strong>liquidación del {{ settlement()!.period_start_km | argNumber }} al
+          {{ settlement()!.period_end_km | argNumber }} km</strong>?
+        </p>
+        <p class="dialog-warning">
+          ⚠️ Solo se puede eliminar la última carga. Al hacerlo, esta liquidación
+          y la referencia de kilómetros van a desaparecer.
+        </p>
+        <div class="dialog-actions">
+          <button class="btn dialog-btn-no" type="button" (click)="cancelDelete()">
+            Cancelar
+          </button>
+          <button class="btn btn-danger" type="button" (click)="doDelete()" [disabled]="deleting()">
+            {{ deleting() ? 'Eliminando...' : 'Sí, eliminar' }}
+          </button>
+        </div>
+      </div>
     </div>
   }
 

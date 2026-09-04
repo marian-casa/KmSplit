@@ -5,7 +5,7 @@ from rest_framework.response import Response
 from rest_framework.exceptions import PermissionDenied
 
 from .models import FuelLoad, Group, GroupMembership, Settlement, Trip, Vehicle
-from .permissions import CanEditTrip, get_membership
+from .permissions import CanEditFuelLoad, CanEditTrip, get_membership
 from .serializers import (
     FuelLoadSerializer,
     GroupMembershipSerializer,
@@ -186,7 +186,7 @@ class TripViewSet(viewsets.ModelViewSet):
 class FuelLoadViewSet(viewsets.ModelViewSet):
     serializer_class = FuelLoadSerializer
     permission_classes = [permissions.IsAuthenticated]
-    http_method_names = ["get", "post", "head", "options"]  # no se editan ni borran cargas
+    http_method_names = ["get", "post", "patch", "delete", "head", "options"]
 
     def get_queryset(self):
         qs = FuelLoad.objects.filter(
@@ -202,6 +202,20 @@ class FuelLoadViewSet(viewsets.ModelViewSet):
         fuel_load = serializer.save(loaded_by=self.request.user)
         services.create_settlement_for_fuel_load(fuel_load)
         return fuel_load
+
+    def perform_update(self, serializer):
+        fuel_load = serializer.save()
+        services.sync_settlement_for_fuel_load(fuel_load)
+        return fuel_load
+
+    def perform_destroy(self, instance):
+        services.delete_settlement_for_fuel_load(instance)
+        instance.delete()
+
+    def get_permissions(self):
+        if self.action in ("update", "partial_update", "destroy"):
+            return [permissions.IsAuthenticated(), CanEditFuelLoad()]
+        return [permissions.IsAuthenticated()]
 
 
 class SettlementViewSet(viewsets.ReadOnlyModelViewSet):

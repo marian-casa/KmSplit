@@ -176,13 +176,106 @@ class TestFuelLoadTriggersSettlement:
         assert len(settlements.data) == 1
         assert settlements.data[0]["unassigned_km"] == 50
 
-    def test_fuel_load_cannot_be_edited(self, family, vehicle):
+    def test_fuel_load_odometer_cannot_be_lower_than_checkpoint(self, family, vehicle):
+        # vehicle.current_km = 1000 (fixture); intentar cargar con 300 km da 400
         client = auth_client(family["owner"])
-        create_response = client.post("/api/fuel-loads/", {
+        response = client.post("/api/fuel-loads/", {
+            "vehicle": vehicle.id, "load_date": "2026-07-02",
+            "odometer_km": 300, "amount": "5000.00",
+        })
+        assert response.status_code == 400
+        assert "odometer_km" in response.data
+        assert "mayor" in response.data["odometer_km"][0]
+
+    def test_fuel_load_odometer_must_be_greater_than_checkpoint(self, family, vehicle):
+        client = auth_client(family["owner"])
+        response = client.post("/api/fuel-loads/", {
+            "vehicle": vehicle.id, "load_date": "2026-07-02",
+            "odometer_km": 1000, "amount": "5000.00",  # == fixture current_km
+        })
+        assert response.status_code == 400
+
+    def test_owner_can_edit_last_fuel_load(self, family, vehicle):
+        client = auth_client(family["owner"])
+        created = client.post("/api/fuel-loads/", {
             "vehicle": vehicle.id, "load_date": "2026-07-02",
             "odometer_km": 1100, "amount": "5000.00",
         })
-        fuel_load_id = create_response.data["id"]
+        fuel_load_id = created.data["id"]
 
         response = client.patch(f"/api/fuel-loads/{fuel_load_id}/", {"amount": "6000.00"})
-        assert response.status_code == 405
+        assert response.status_code == 200
+        assert response.data["amount"] == "6000.00"
+
+        # la liquidación de esa carga refleja el nuevo monto y km actualizado
+        settlements = client.get(f"/api/settlements/?vehicle={vehicle.id}")
+        assert settlements.data[0]["total_amount"] == "6000.00"
+
+    def test_member_cannot_edit_fuel_load(self, family, vehicle):
+        client = auth_client(family["owner"])
+        created = client.post("/api/fuel-loads/", {
+            "vehicle": vehicle.id, "load_date": "2026-07-02",
+            "odometer_km": 1100, "amount": "5000.00",
+        })
+        fuel_load_id = created.data["id"]
+
+        response = auth_client(family["member"]).patch(
+            f"/api/fuel-loads/{fuel_load_id}/", {"amount": "6000.00"}
+        )
+        assert response.status_code in (403, 404)
+
+    def test_cannot_edit_a_none_last_fuel_load(self, family, vehicle):
+        client = auth_client(family["owner"])
+        first = client.post("/api/fuel-loads/", {
+            "vehicle": vehicle.id, "load_date": "2026-07-02",
+            "odometer_km": 1100, "amount": "5000.00",
+        })
+        second = client.post("/api/fuel-loads/", {
+            "vehicle": vehicle.id, "load_date": "2026-07-03",
+            "odometer_km": 1200, "amount": "6000.00",
+        })
+
+        # editar la primera (ya no es la última) => prohibido
+        response = client.patch(f"/api/fuel-loads/{first.data['id']}/", {"amount": "9999.00"})
+        assert response.status_code in (403, 404)
+
+        # editar la última => ok
+        ok = client.patch(f"/api/fuel-loads/{second.data['id']}/", {"amount": "7777.00"})
+        assert ok.status_code == 200
+        assert ok.data["amount"] == "7777.00"
+
+    def test_owner_can_delete_last_fuel_load_and_rolls_back_km(self, family, vehicle):
+        client = auth_client(family["owner"])
+        client.post("/api/fuel-loads/", {
+            "vehicle": vehicle.id, "load_date": "2026-07-03",
+            "odometer_km": 1200, "amount": "6000.00",
+        })
+        last = client.post("/api/fuel-loads/", {
+            "vehicle": vehicle.id, "load_date": "2026-07-04",
+            "odometer_km": 1300, "amount": "7000.00",
+        })
+        last_id = last.data["id"]
+
+        # tras dos cargas, quedaron dos liquidaciones
+        settlements_before = client.get(f"/api/settlements/?vehicle={vehicle.id}")
+        assert len(settlements_before.data) == 2
+
+        response = client.delete(f"/api/fuel-loads/{last_id}/")
+        assert response.status_code == 204
+
+        # vuelve a haber una sola liquidación y el checkpoint retrocede a 1200
+        settlements_after = client.get(f"/api/settlements/?vehicle={vehicle.id}")
+        assert len(settlements_after.data) == 1
+        vehicle.refresh_from_db()
+        assert vehicle.current_km == 1200
+
+    def test_member_cannot_delete_fuel_load(self, family, vehicle):
+        client = auth_client(family["owner"])
+        created = client.post("/api/fuel-loads/", {
+            "vehicle": vehicle.id, "load_date": "2026-07-02",
+            "odometer_km": 1100, "amount": "5000.00",
+        })
+        response = auth_client(family["member"]).delete(
+            f"/api/fuel-loads/{created.data['id']}/"
+        )
+        assert response.status_code in (403, 404)

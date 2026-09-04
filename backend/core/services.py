@@ -35,29 +35,37 @@ def recalculate_settlement(settlement):
     cada integrante, recalcula km_sin_asignar, y regenera los SettlementDetail.
     Se usa tanto al crear un settlement nuevo como al editar/agregar un viaje
     que cae dentro de un período ya liquidado.
+
+    Cada viaje se **prorratea** contra el rango del período: si un viaje cruza
+    el límite de una liquidación (p. ej. viaje 200→400 km con cargas en 300 y
+    400), aporta solo la parte que cae dentro de ESTE settlement (200→300 para
+    la primera, 300→400 para la segunda). Así una carga siempre captura la parte
+    del viaje que le corresponde, sin depender de a qué settlement apunta el FK.
     """
     vehicle = settlement.vehicle
     period_start = settlement.period_start_km
     period_end = settlement.period_end_km
     period_total_km = period_end - period_start
 
-    # 1. "Adoptar" viajes sueltos (todavía sin settlement) que caen en este rango
-    #    -- cubre el caso de un viaje cargado tarde, después de que ya se liquidó
-    #    el período al que pertenece.
-    Trip.objects.filter(
+    # Viajes del vehículo que SOLAPAN el período (independiente del FK
+    # settlement), con el km recortado al rango de esta liquidación.
+    overlapping_trips = Trip.objects.filter(
         vehicle=vehicle,
-        settlement__isnull=True,
-        start_km__gte=period_start,
-        end_km__lte=period_end,
-    ).update(settlement=settlement)
+        start_km__lt=period_end,
+        end_km__gt=period_start,
+    )
 
-    trips = list(Trip.objects.filter(vehicle=vehicle, settlement=settlement))
+    registered_by_user = {}
+    registered_km_total = 0
+    for trip in overlapping_trips:
+        clip_start = max(trip.start_km, period_start)
+        clip_end = min(trip.end_km, period_end)
+        clipped = clip_end - clip_start
+        if clipped <= 0:
+            continue
+        registered_by_user[trip.user_id] = registered_by_user.get(trip.user_id, 0) + clipped
+        registered_km_total += clipped
 
-    trips_by_user = {}
-    for trip in trips:
-        trips_by_user.setdefault(trip.user_id, []).append(trip)
-
-    registered_km_total = sum(t.km_traveled for t in trips)
     # clamp a 0: si hay viajes superpuestos que suman más que el período real,
     # no dejamos que unassigned_km quede negativo. La prevención de solapamiento
     # se hace en TripSerializer.validate; esto es solo una red de seguridad.
@@ -74,7 +82,7 @@ def recalculate_settlement(settlement):
         split_user_ids = {m.user_id for m in active_memberships}
     else:
         # solo entre quienes efectivamente manejaron en este período
-        split_user_ids = set(trips_by_user.keys())
+        split_user_ids = set(registered_by_user.keys())
 
     share_count = len(split_user_ids) or 1  # evita división por cero
     unassigned_share = Decimal(unassigned_km) / Decimal(share_count)
@@ -83,8 +91,7 @@ def recalculate_settlement(settlement):
 
     details = []
     for membership in active_memberships:
-        user_trips = trips_by_user.get(membership.user_id, [])
-        registered_km = sum(t.km_traveled for t in user_trips)
+        registered_km = registered_by_user.get(membership.user_id, 0)
         share = unassigned_share if membership.user_id in split_user_ids else Decimal("0")
         km_driven = Decimal(registered_km) + share
 
@@ -109,6 +116,55 @@ def recalculate_settlement(settlement):
 
     SettlementDetail.objects.bulk_create(details)
     return settlement
+
+
+def is_last_fuel_load(fuel_load: FuelLoad) -> bool:
+    """True si esta carga es la más reciente del vehículo (no hay otra posterior)."""
+    latest = FuelLoad.objects.filter(vehicle=fuel_load.vehicle).order_by("-id").first()
+    return latest is not None and latest.id == fuel_load.id
+
+
+def sync_settlement_for_fuel_load(fuel_load: FuelLoad):
+    """Re-sincroniza la liquidación de una carga después de editarla.
+
+    Solo tiene sentido para la carga MÁS RECIENTE (no hay posteriores que
+    dependan de su checkpoint). Actualiza el rango y el monto del período y
+    avanza el checkpoint del vehículo al nuevo odómetro."""
+    settlement = Settlement.objects.filter(fuel_load=fuel_load).first()
+    if settlement is None:
+        return None
+
+    vehicle = fuel_load.vehicle
+    settlement.period_end_km = fuel_load.odometer_km
+    settlement.total_amount = fuel_load.amount
+    settlement.save(update_fields=["period_end_km", "total_amount"])
+
+    vehicle.current_km = fuel_load.odometer_km
+    vehicle.save(update_fields=["current_km"])
+
+    recalculate_settlement(settlement)
+    return settlement
+
+
+def delete_settlement_for_fuel_load(fuel_load: FuelLoad):
+    """Elimina la liquidación de una carga y revierte el checkpoint del vehículo.
+
+    Solo tiene sentido para la carga MÁS RECIENTE: los viajes que apuntaban a
+    esta liquidación vuelven a quedar "sueltos" y el km del vehículo retrocede
+    al inicio de este período (al checkpoint previo a esta carga)."""
+    settlement = (
+        Settlement.objects.filter(fuel_load=fuel_load).select_related("vehicle").first()
+    )
+    if settlement is None:
+        return
+
+    Trip.objects.filter(settlement=settlement).update(settlement=None)
+
+    vehicle = settlement.vehicle
+    vehicle.current_km = settlement.period_start_km
+    vehicle.save(update_fields=["current_km"])
+
+    settlement.delete()
 
 
 def create_settlement_for_fuel_load(fuel_load: FuelLoad) -> Settlement:

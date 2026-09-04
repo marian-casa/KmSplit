@@ -11,6 +11,17 @@
   color: var(--blue-700);
 }
 
+.success-message {
+  background: var(--green);
+  color: var(--white);
+  border-radius: var(--radius-sm);
+  padding: 10px 12px;
+  font-size: 13px;
+  font-weight: 700;
+  text-align: center;
+  margin: 0;
+}
+
 .liquidacion-section {
   margin-top: 24px;
 }

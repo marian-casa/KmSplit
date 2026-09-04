@@ -4,6 +4,7 @@ import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 
 import { Settlement } from '../../../core/models/settlement.model';
+import { FuelLoad } from '../../../core/models/fuel-load.model';
 import { FuelLoadService } from '../../../core/services/fuel-load.service';
 import { SettlementService } from '../../../core/services/settlement.service';
 import { formatKm } from '../../../core/utils/format-args';
@@ -24,9 +25,14 @@ export class FuelLoadFormComponent {
   private settlementService = inject(SettlementService);
 
   vehicleId = Number(this.route.snapshot.paramMap.get('id'));
+  /** Si estamos editando una carga existente, su id viene por ?edit=. */
+  editId = signal<number | null>(null);
+  editLoading = signal(false);
 
   loading = signal(false);
   errorMessage = signal<string | null>(null);
+  successMessage = signal<string | null>(null);
+  saveSuccess = signal(false);
 
   readonly settlementPageSize = 5;
   settlements = signal<Settlement[]>([]);
@@ -34,6 +40,62 @@ export class FuelLoadFormComponent {
   settlementsLoading = signal(true);
 
   constructor() {
+    this.loadSettlements();
+    // el BehaviorSubject emite el valor actual apenas nos suscribimos, con lo
+    // que `?edit=` inicial ya dispara la carga de la carga a editar.
+    this.route.queryParamMap.subscribe(() => this.syncEditMode());
+  }
+
+  private syncEditMode(): void {
+    const next = this.paramOrNull('edit');
+    const prev = this.editId();
+    if (prev === next) return;
+
+    this.saveSuccess.set(false);
+    this.errorMessage.set(null);
+    this.editId.set(next);
+
+    if (next == null) {
+      this.editLoading.set(false);
+      this.form.reset({ load_date: this.today(), odometer_km: null, amount: null, liters: null });
+      this.form.markAsPristine();
+      return;
+    }
+
+    this.editLoading.set(true);
+    this.fuelLoadService.get(next).subscribe({
+      next: (load) => {
+        this.form.patchValue({
+          load_date: load.load_date,
+          odometer_km: load.odometer_km,
+          amount: Number(load.amount),
+          liters: load.liters != null ? Number(load.liters) : null,
+        });
+        this.editLoading.set(false);
+      },
+      error: () => {
+        this.errorMessage.set('No pudimos cargar la carga para editar.');
+        this.editLoading.set(false);
+      },
+    });
+  }
+
+  get isEdit(): boolean {
+    return this.editId() != null;
+  }
+
+  /** Sale del modo edición volviendo a la vista de carga. */
+  cancelEdit(): void {
+    this.router.navigateByUrl(`/vehiculo/${this.vehicleId}/carga`).catch(() => {});
+  }
+
+  private paramOrNull(name: string): number | null {
+    const raw = this.route.snapshot.queryParamMap.get(name);
+    return raw ? Number(raw) : null;
+  }
+
+  private loadSettlements(): void {
+    this.settlementsLoading.set(true);
     this.settlementService.listByVehicle(this.vehicleId).subscribe({
       next: (list) => {
         const sorted = list
@@ -41,6 +103,7 @@ export class FuelLoadFormComponent {
           .sort((a, b) => b.id - a.id)
           .slice(0, 3 + this.settlementPageSize);
         this.settlements.set(sorted);
+        this.settlementsVisible.set(3);
         this.settlementsLoading.set(false);
       },
       error: () => {
@@ -62,11 +125,20 @@ export class FuelLoadFormComponent {
   }
 
   settlementLabel(s: Settlement): string {
-    return `${formatKm(s.period_start_km)} → ${formatKm(s.period_end_km)} km · $${s.total_amount}`;
+    const date = s.load_date ? this.formatDate(s.load_date) : '';
+    const who = s.loaded_by_name ?? '';
+    return `${formatKm(s.period_start_km)} → ${formatKm(s.period_end_km)} km · ${who} · ${date} · $${s.total_amount}`;
+  }
+
+  private formatDate(iso: string): string {
+    const d = new Date(iso);
+    return d.toLocaleDateString('es-AR', { day: '2-digit', month: '2-digit' });
   }
 
   goToSettlement(id: number): void {
-    this.router.navigate(['/vehiculo', this.vehicleId, 'liquidacion', id]);
+    this.router.navigate(['/vehiculo', this.vehicleId, 'liquidacion', id], {
+      queryParams: { from: 'carga' },
+    });
   }
 
   form = this.fb.nonNullable.group({
@@ -84,29 +156,52 @@ export class FuelLoadFormComponent {
 
     this.loading.set(true);
     this.errorMessage.set(null);
+    this.successMessage.set(null);
 
     const { load_date, odometer_km, amount, liters } = this.form.getRawValue();
+    const editId = this.editId();
 
-    this.fuelLoadService
-      .create({
-        vehicle: this.vehicleId,
-        load_date,
-        odometer_km: odometer_km!,
-        amount: amount!,
-        liters: liters ?? undefined,
-      })
-      .subscribe({
-        next: () => {
-          this.loading.set(false);
-          this.router.navigate(['/vehiculo', this.vehicleId]);
-        },
-        error: (err) => {
-          this.loading.set(false);
-          this.errorMessage.set(
-            err.error?.odometer_km?.[0] ?? 'No pudimos guardar la carga. Revisá los datos.',
-          );
-        },
-      });
+    const request$ = editId
+      ? this.fuelLoadService.update(editId, {
+          load_date,
+          odometer_km: odometer_km!,
+          amount: amount!,
+          liters: liters ?? null,
+        })
+      : this.fuelLoadService.create({
+          vehicle: this.vehicleId,
+          load_date,
+          odometer_km: odometer_km!,
+          amount: amount!,
+          liters: liters ?? undefined,
+        });
+
+    request$.subscribe({
+      next: () => {
+        this.loading.set(false);
+        if (editId) {
+          // animación de éxito (~1s) antes de volver a la vista de carga
+          this.saveSuccess.set(true);
+          setTimeout(() => {
+            this.router
+              .navigateByUrl(`/vehiculo/${this.vehicleId}/carga`)
+              .catch(() => {});
+          }, 1000);
+          return;
+        }
+        this.successMessage.set('Carga registrada ✅');
+        this.form.reset({ load_date: this.today(), odometer_km: null, amount: null, liters: null });
+        this.form.markAsPristine();
+        this.loadSettlements();
+        setTimeout(() => this.successMessage.set(null), 3000);
+      },
+      error: (err) => {
+        this.loading.set(false);
+        this.errorMessage.set(
+          err.error?.odometer_km?.[0] ?? 'No pudimos guardar la carga. Revisá los datos.',
+        );
+      },
+    });
   }
 
   private today(): string {

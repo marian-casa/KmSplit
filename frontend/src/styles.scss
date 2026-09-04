@@ -166,6 +166,15 @@ input[type='date'] {
   border: 1.5px solid var(--blue-500);
 }
 
+.btn-success {
+  background: var(--green);
+  color: var(--white);
+
+  &:hover:not(:disabled) {
+    background: #2e8b4f;
+  }
+}
+
 /* Links */
 .link {
   color: var(--blue-500);

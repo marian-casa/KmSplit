@@ -1,6 +1,14 @@
 from rest_framework import serializers
 
-from .models import FuelLoad, Group, GroupMembership, Settlement, SettlementDetail, Trip, Vehicle
+from .models import (
+    FuelLoad,
+    Group,
+    GroupMembership,
+    Settlement,
+    SettlementDetail,
+    Trip,
+    Vehicle,
+)
 
 
 class GroupMembershipSerializer(serializers.ModelSerializer):
@@ -111,6 +119,27 @@ class FuelLoadSerializer(serializers.ModelSerializer):
         fields = ["id", "vehicle", "loaded_by", "load_date", "odometer_km", "amount", "liters", "created_at"]
         read_only_fields = ["id", "loaded_by", "created_at"]
 
+    def validate_odometer_km(self, value):
+        """El odómetro de una carga nunca puede ser menor o igual al último km
+        conocido del vehículo (vehicle.current_km es el checkpoint de la última
+        carga/registro). Evita cargas con km en retroceso (p. ej. baja de 2.300 a 300)."""
+        if value is None:
+            return value
+
+        vehicle = None
+        if self.instance is not None:
+            vehicle = self.instance.vehicle
+        else:
+            vehicle_id = self.initial_data.get("vehicle")
+            if vehicle_id:
+                vehicle = Vehicle.objects.filter(id=vehicle_id).first()
+
+        if vehicle is not None and value <= vehicle.current_km:
+            raise serializers.ValidationError(
+                f"El km del odómetro debe ser mayor al último registro ({vehicle.current_km} km)."
+            )
+        return value
+
 
 class SettlementDetailSerializer(serializers.ModelSerializer):
     user_name = serializers.CharField(source="user.name", read_only=True)
@@ -125,12 +154,14 @@ class SettlementDetailSerializer(serializers.ModelSerializer):
 
 class SettlementSerializer(serializers.ModelSerializer):
     details = SettlementDetailSerializer(many=True, read_only=True)
+    load_date = serializers.DateField(source="fuel_load.load_date", read_only=True)
+    loaded_by_name = serializers.CharField(source="fuel_load.loaded_by.name", read_only=True)
 
     class Meta:
         model = Settlement
         fields = [
             "id", "vehicle", "fuel_load", "period_start_km", "period_end_km",
             "total_amount", "unassigned_km", "status", "status_updated_by",
-            "created_at", "details",
+            "created_at", "load_date", "loaded_by_name", "details",
         ]
         read_only_fields = fields

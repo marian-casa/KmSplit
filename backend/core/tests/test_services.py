@@ -112,6 +112,40 @@ class TestSettlementMath:
         assert admin.id in user_ids_in_detail
 
 
+class TestTripProrationAcrossBoundaries:
+    """
+    Una carga siempre captura la parte del viaje que cae dentro de SU período,
+    aunque el viaje cruce el límite hacia la liquidación siguiente.
+    """
+
+    def test_trip_crossing_a_settlement_boundary_is_prorated(self, family, vehicle):
+        owner = family["owner"]
+        assert vehicle.current_km == 1000
+
+        # viaje registrado 1000 -> 1200 (atraviesa el futuro límite de 1100)
+        _create_trip(vehicle, owner, "2026-07-01", 1000, 1200)
+
+        # carga en 1100 -> cierra [1000, 1100] tomando los 100 km del viaje
+        first = _create_fuel_load_and_settle(
+            vehicle, owner, "2026-07-02", odometer_km=1100, amount=Decimal("1000.00")
+        )
+        assert first.period_start_km == 1000
+        assert first.period_end_km == 1100
+        details_first = {d.user_id: d for d in first.details.all()}
+        assert details_first[owner.id].registered_km == 100
+        assert first.unassigned_km == 0
+
+        # siguiente carga en 1200 -> cierra [1100, 1200] tomando los otros 100 km
+        second = _create_fuel_load_and_settle(
+            vehicle, owner, "2026-07-03", odometer_km=1200, amount=Decimal("2000.00")
+        )
+        assert second.period_start_km == 1100
+        assert second.period_end_km == 1200
+        details_second = {d.user_id: d for d in second.details.all()}
+        assert details_second[owner.id].registered_km == 100
+        assert second.unassigned_km == 0
+
+
 class TestLateTripsAndEdits:
     def test_late_trip_gets_picked_up_by_existing_settlement(self, family, vehicle):
         owner, admin, _ = family["owner"], family["admin"], family["member"]

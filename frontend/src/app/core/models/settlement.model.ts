@@ -21,6 +21,8 @@ export interface Settlement {
   unassigned_km: number;
   status: SettlementStatus;
   status_updated_by: number | null;
+  load_date: string;
+  loaded_by_name: string;
   created_at: string;
   details: SettlementDetail[];
 }

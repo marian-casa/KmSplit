@@ -1,14 +1,23 @@
 <div class="screen">
   <div class="screen-header">
-    <button class="icon-btn" type="button" [routerLink]="['/vehiculo', vehicleId]" aria-label="Volver">‹</button>
-    <h1>Registrar carga</h1>
-    <span class="icon-btn-spacer"></span>
+    @if (isEdit) {
+      <button class="icon-btn" type="button" (click)="cancelEdit()" aria-label="Volver">‹</button>
+      <h1>Editar carga</h1>
+      <span class="icon-btn-spacer"></span>
+    } @else {
+      <button class="icon-btn" type="button" [routerLink]="['/vehiculo', vehicleId]" aria-label="Volver">‹</button>
+      <h1>Registrar carga</h1>
+      <span class="icon-btn-spacer"></span>
+    }
   </div>
 
   <div class="banner-alert">
     ⚠️ Recordá ingresar el km completo que muestra el tablero de tu vehículo.
   </div>
 
+  @if (editLoading()) {
+    <p class="muted">Cargando...</p>
+  } @else {
   <form [formGroup]="form" (ngSubmit)="submit()" class="fuel-form">
     <div>
       <input class="field" type="date" formControlName="load_date" />
@@ -45,47 +54,67 @@
     </div>
 
     <div class="banner-alert banner-info">
-      ℹ️ Al guardar se calcula el reparto automático desde la última carga.
+      ℹ️ {{ isEdit ? 'Al guardar se actualiza el reparto de esta carga.' : 'Al guardar se calcula el reparto automático desde la última carga.' }}
     </div>
 
     @if (errorMessage()) {
       <p class="field-error">{{ errorMessage() }}</p>
     }
 
-    <button class="btn" type="submit" [disabled]="loading()">
-      {{ loading() ? 'Guardando...' : 'Guardar carga' }}
-    </button>
+    @if (successMessage()) {
+      <p class="success-message">{{ successMessage() }}</p>
+    }
+
+    @if (!successMessage()) {
+      <button
+        class="btn submit-btn"
+        type="submit"
+        [class.btn-success]="saveSuccess()"
+        [disabled]="loading() || editLoading() || saveSuccess()"
+      >
+        @if (saveSuccess()) {
+          Cambio exitoso
+        } @else if (loading()) {
+          Guardando...
+        } @else {
+          {{ isEdit ? 'Guardar cambios' : 'Guardar carga' }}
+        }
+      </button>
+    }
   </form>
+  }
 
-  <section class="liquidacion-section">
-    <h2 class="section-title">Liquidación</h2>
+  @if (!isEdit) {
+    <section class="liquidacion-section">
+      <h2 class="section-title">Liquidación</h2>
 
-    @if (settlementsLoading()) {
-      <p class="muted">Cargando...</p>
-    } @else if (settlements().length === 0) {
-      <p class="muted">Todavía no hay liquidaciones.</p>
-    } @else {
-      <div class="settlement-list">
-        @for (settlement of visibleSettlements; track settlement.id) {
-          <button
-            class="settlement-row"
-            type="button"
-            (click)="goToSettlement(settlement.id)"
-          >
-            <span class="settlement-status">{{ settlement.status === 'pagado' ? '✅' : '⏳' }}</span>
-            <span class="settlement-label">{{ settlementLabel(settlement) }}</span>
-            <span class="edit-hint">👁️</span>
+      @if (settlementsLoading()) {
+        <p class="muted">Cargando...</p>
+      } @else if (settlements().length === 0) {
+        <p class="muted">Todavía no hay liquidaciones.</p>
+      } @else {
+        <div class="settlement-list">
+          @for (settlement of visibleSettlements; track settlement.id) {
+            <button
+              class="settlement-row"
+              type="button"
+              (click)="goToSettlement(settlement.id)"
+            >
+              <span class="settlement-status">{{ settlement.status === 'pagado' ? '✅' : '⏳' }}</span>
+              <span class="settlement-label">{{ settlementLabel(settlement) }}</span>
+              <span class="edit-hint">👁️</span>
+            </button>
+          }
+        </div>
+
+        @if (hasMoreSettlements) {
+          <button class="btn btn-secondary" type="button" (click)="loadMoreSettlements()">
+            Ver más
           </button>
         }
-      </div>
-
-      @if (hasMoreSettlements) {
-        <button class="btn btn-secondary" type="button" (click)="loadMoreSettlements()">
-          Desplegar más
-        </button>
       }
-    }
-  </section>
+    </section>
+  }
 
   <app-bottom-nav [vehicleId]="vehicleId" />
 </div>
