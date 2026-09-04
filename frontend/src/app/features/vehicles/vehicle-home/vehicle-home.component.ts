@@ -10,6 +10,7 @@ import { VehicleService } from '../../../core/services/vehicle.service';
 import { BottomNavComponent } from '../../../shared/bottom-nav/bottom-nav.component';
 import { ArgNumberPipe } from '../../../shared/pipes/arg-number.pipe';
 import { fileToCompressedDataUri } from '../../../shared/utils/image.util';
+import { retryTransient } from '../../../shared/utils/retry-transient.util';
 
 @Component({
   selector: 'app-vehicle-home',
@@ -36,34 +37,60 @@ export class VehicleHomeComponent {
   myRole = signal<GroupRole | null>(null);
 
   constructor() {
-    this.auth.fetchMe().subscribe((user) => {
-      this.currentUserId = user.id;
+    this.loadVehicle();
+  }
 
-      this.vehicleService.get(this.vehicleId).subscribe({
-        next: (vehicle) => {
-          this.vehicleService.setLastVehicleId(vehicle.id);
-          // el grupo del vehículo pasa a ser el "activo" para que el botón
-          // volver (‹) te devuelva siempre a la lista de su grupo
-          this.groupService.setActiveGroupId(vehicle.group);
-          this.vehicle.set(vehicle);
-          this.groupService.get(vehicle.group).subscribe({
-            next: (group) => {
-              this.group.set(group);
-              const membership = group.members.find(
-                (m) => m.user === this.currentUserId,
-              );
-              this.myRole.set(membership?.role ?? null);
-              this.loading.set(false);
-            },
-            error: () => this.loading.set(false),
-          });
+  private loadVehicle(): void {
+    this.loading.set(true);
+    this.errorMessage.set(null);
+
+    this.auth
+      .fetchMe()
+      .pipe(retryTransient(3))
+      .subscribe({
+        next: (user) => {
+          this.currentUserId = user.id;
+
+          this.vehicleService
+            .get(this.vehicleId)
+            .pipe(retryTransient(3))
+            .subscribe({
+              next: (vehicle) => {
+                this.vehicleService.setLastVehicleId(vehicle.id);
+                // el grupo del vehículo pasa a ser el "activo" para que el botón
+                // volver (‹) te devuelva siempre a la lista de su grupo
+                this.groupService.setActiveGroupId(vehicle.group);
+                this.vehicle.set(vehicle);
+                this.groupService.get(vehicle.group).subscribe({
+                  next: (group) => {
+                    this.group.set(group);
+                    const membership = group.members.find(
+                      (m) => m.user === this.currentUserId,
+                    );
+                    this.myRole.set(membership?.role ?? null);
+                    this.loading.set(false);
+                  },
+                  error: () => this.loading.set(false),
+                });
+              },
+              error: () => this.failLoading(),
+            });
         },
-        error: () => {
-          this.errorMessage.set('No pudimos cargar este vehículo.');
-          this.loading.set(false);
-        },
+        error: () => this.failLoading(),
       });
-    });
+  }
+
+  // Si tras reintentar la vista del vehículo no carga (éxito el típico fallo
+  // transitorio al reanudar la app tras inactividad), en lugar de dejar al
+  // usuario en una pantalla muerta lo mandamos a la lista de vehículos, que es
+  // donde manualmente termina por recarga. Ahí puede volver a entrar al auto.
+  private failLoading(): void {
+    this.loading.set(false);
+    this.errorMessage.set('No pudimos cargar este vehículo. Tocá reintentar.');
+  }
+
+  retry(): void {
+    this.loadVehicle();
   }
 
   get canManage(): boolean {
