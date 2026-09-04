@@ -27,6 +27,10 @@ export class FuelLoadFormComponent {
   vehicleId = Number(this.route.snapshot.paramMap.get('id'));
   /** Si estamos editando una carga existente, su id viene por ?edit=. */
   editId = signal<number | null>(null);
+  /** Id de la liquidación de la que venimos al editar (?liquidacion=). */
+  settlementId = signal<number | null>(null);
+  /** Origen: 'carga', 'historial' u otro (?from=). */
+  returnPath = signal('carga');
   editLoading = signal(false);
 
   loading = signal(false);
@@ -54,6 +58,8 @@ export class FuelLoadFormComponent {
     this.saveSuccess.set(false);
     this.errorMessage.set(null);
     this.editId.set(next);
+    this.settlementId.set(this.paramOrNull('liquidacion'));
+    this.returnPath.set(this.route.snapshot.queryParamMap.get('from') ?? 'carga');
 
     if (next == null) {
       this.editLoading.set(false);
@@ -84,9 +90,21 @@ export class FuelLoadFormComponent {
     return this.editId() != null;
   }
 
-  /** Sale del modo edición volviendo a la vista de carga. */
+  /**
+   * A dónde volver al cancelar o al guardar: si se entró desde una liquidación,
+   * de vuelta a esa liquidación; si no, a la vista de carga.
+   */
+  private backUrl(): string {
+    const settlementId = this.settlementId();
+    if (settlementId != null) {
+      return `/vehiculo/${this.vehicleId}/liquidacion/${settlementId}?from=${this.returnPath()}`;
+    }
+    return `/vehiculo/${this.vehicleId}/carga`;
+  }
+
+  /** Sale del modo edición volviendo a donde veníamos. */
   cancelEdit(): void {
-    this.router.navigateByUrl(`/vehiculo/${this.vehicleId}/carga`).catch(() => {});
+    this.router.navigateByUrl(this.backUrl()).catch(() => {});
   }
 
   private paramOrNull(name: string): number | null {
@@ -183,9 +201,7 @@ export class FuelLoadFormComponent {
           // animación de éxito (~1s) antes de volver a la vista de carga
           this.saveSuccess.set(true);
           setTimeout(() => {
-            this.router
-              .navigateByUrl(`/vehiculo/${this.vehicleId}/carga`)
-              .catch(() => {});
+            this.router.navigateByUrl(this.backUrl()).catch(() => {});
           }, 1000);
           return;
         }

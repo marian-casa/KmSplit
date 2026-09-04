@@ -89,7 +89,11 @@ export class SettlementDetailComponent {
     const settlement = this.settlement();
     if (!settlement) return;
     this.router.navigate(['/vehiculo', this.vehicleId, 'carga'], {
-      queryParams: { edit: settlement.fuel_load, from: this.from },
+      queryParams: {
+        edit: settlement.fuel_load,
+        liquidacion: settlement.id,
+        from: this.from,
+      },
     });
   }
 

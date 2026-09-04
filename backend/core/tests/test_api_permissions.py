@@ -224,6 +224,38 @@ class TestFuelLoadTriggersSettlement:
         )
         assert response.status_code in (403, 404)
 
+    def test_edit_last_fuel_load_allows_keeping_same_odometer(self, family, vehicle):
+        """Al editar la última carga se permite mantener el mismo km del odómetro
+        (se compara contra el inicio de su liquidación, no contra current_km)."""
+        client = auth_client(family["owner"])
+        created = client.post("/api/fuel-loads/", {
+            "vehicle": vehicle.id, "load_date": "2026-07-02",
+            "odometer_km": 1100, "amount": "5000.00",
+        })
+        fuel_load_id = created.data["id"]
+
+        # PATCH enviando el mismo odómetro (1100 == current_km) => debe pasar
+        response = client.patch(f"/api/fuel-loads/{fuel_load_id}/", {
+            "odometer_km": 1100, "amount": "6000.00",
+        })
+        assert response.status_code == 200
+        assert response.data["odometer_km"] == 1100
+
+    def test_edit_last_fuel_load_rejects_below_period_start(self, family, vehicle):
+        """No se puede bajar el odómetro por debajo del inicio de la liquidación."""
+        client = auth_client(family["owner"])
+        created = client.post("/api/fuel-loads/", {
+            "vehicle": vehicle.id, "load_date": "2026-07-02",
+            "odometer_km": 1100, "amount": "5000.00",
+        })
+        fuel_load_id = created.data["id"]
+
+        # period_start == 1000 (fixture current_km); bajar a 900 => rechazado
+        response = client.patch(f"/api/fuel-loads/{fuel_load_id}/", {"odometer_km": 900})
+        assert response.status_code == 400
+        assert "odometer_km" in response.data
+        assert "inicio" in response.data["odometer_km"][0]
+
     def test_cannot_edit_a_none_last_fuel_load(self, family, vehicle):
         client = auth_client(family["owner"])
         first = client.post("/api/fuel-loads/", {

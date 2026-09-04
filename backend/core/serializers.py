@@ -120,9 +120,13 @@ class FuelLoadSerializer(serializers.ModelSerializer):
         read_only_fields = ["id", "loaded_by", "created_at"]
 
     def validate_odometer_km(self, value):
-        """El odómetro de una carga nunca puede ser menor o igual al último km
-        conocido del vehículo (vehicle.current_km es el checkpoint de la última
-        carga/registro). Evita cargas con km en retroceso (p. ej. baja de 2.300 a 300)."""
+        """El odómetro de una carga nunca puede ir en retroceso.
+
+        Al crear, la referencia es vehicle.current_km (el último checkpoint), así
+        que el km debe ser mayor. Al editar la ÚLTIMA carga, la referencia pasa a
+        ser el km de INICIO de su liquidación (period_start_km): así se permite
+        mantener el mismo odómetro (al tocar solo el monto, por ejemplo) pero se
+        sigue rechazando que baje por debajo del checkpoint previo a esa carga."""
         if value is None:
             return value
 
@@ -134,10 +138,23 @@ class FuelLoadSerializer(serializers.ModelSerializer):
             if vehicle_id:
                 vehicle = Vehicle.objects.filter(id=vehicle_id).first()
 
-        if vehicle is not None and value <= vehicle.current_km:
-            raise serializers.ValidationError(
-                f"El km del odómetro debe ser mayor al último registro ({vehicle.current_km} km)."
-            )
+        if vehicle is None:
+            return value
+
+        base_km = vehicle.current_km
+        message = f"El km del odómetro debe ser mayor al último registro ({base_km} km)."
+
+        if self.instance is not None:
+            settlement = Settlement.objects.filter(fuel_load=self.instance).first()
+            if settlement is not None:
+                base_km = settlement.period_start_km
+                message = (
+                    f"El km del odómetro no puede ser menor ni igual al inicio de "
+                    f"esta liquidación ({base_km} km)."
+                )
+
+        if value <= base_km:
+            raise serializers.ValidationError(message)
         return value
 
 
