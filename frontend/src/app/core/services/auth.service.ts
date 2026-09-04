@@ -12,6 +12,7 @@ import {
   RegisterRequest,
 } from '../models/auth.model';
 import { User } from '../models/user.model';
+import { retryTransient } from '../../shared/utils/retry-transient.util';
 
 const ACCESS_TOKEN_KEY = 'kmsplit_access_token';
 const LEGACY_REFRESH_TOKEN_KEY = 'kmsplit_refresh_token'; // ya no se usa, ver constructor
@@ -64,7 +65,10 @@ export class AuthService {
   refresh(): Observable<AccessTokenResponse> {
     return this.http
       .post<AccessTokenResponse>(`${this.baseUrl}/refresh/`, {})
-      .pipe(tap(({ access }) => localStorage.setItem(ACCESS_TOKEN_KEY, access)));
+      .pipe(
+        retryTransient(3),
+        tap(({ access }) => localStorage.setItem(ACCESS_TOKEN_KEY, access)),
+      );
   }
 
   logout(): Observable<unknown> {
