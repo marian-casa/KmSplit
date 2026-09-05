@@ -23,9 +23,16 @@ export const authGuard: CanActivateFn = () => {
     return false;
   }
 
-  // Ya tenemos un token guardado de un arranque anterior. Intentamos renovar
-  // la sesión en silencio antes de dejar pasar, para no caer en una cadena de
-  // 401 en cuanto arranquen las llamadas de datos.
+  // Si el access token todavía tiene vida (~30 min o más), dejamos pasar
+  // directo. Refrescar en cada navegación era contraproducente: cada refresh
+  // rota el token (y sobreescribe la cookie), y en mobile una ráfaga de
+  // refreshes simultáneos podía invalidar tokens entre sí y cerrar la sesión.
+  if (auth.isAccessTokenFresh()) {
+    return true;
+  }
+
+  // El token está por expirar o ya expiró: renovamos en silencio con la
+  // cookie httpOnly del refresh token antes de dejar pasar.
   return auth.refresh().pipe(
     map(() => true),
     catchError(() => {

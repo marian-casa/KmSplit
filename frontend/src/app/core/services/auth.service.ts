@@ -1,6 +1,6 @@
 import { HttpClient } from '@angular/common/http';
 import { Injectable, inject } from '@angular/core';
-import { BehaviorSubject, Observable, catchError, of, tap } from 'rxjs';
+import { BehaviorSubject, Observable, catchError, finalize, of, shareReplay, tap } from 'rxjs';
 
 import { environment } from '../../../environments/environment';
 import {
@@ -25,6 +25,11 @@ export class AuthService {
   private currentUserSubject = new BehaviorSubject<User | null>(null);
   currentUser$ = this.currentUserSubject.asObservable();
 
+  /** Refresco compartido: si ya hay uno en vuelo, todos los llamadores
+   *  (interceptor ante varios 401 paralelos, guard, etc.) esperan el mismo.
+   *  Evita que la rotación invalide tokens entre sí y cierre la sesión. */
+  private refreshRequest: Observable<AccessTokenResponse> | null = null;
+
   constructor() {
     // Limpieza de una sola vez: versiones anteriores de la app guardaban
     // el refresh token en localStorage bajo esta clave. Ahora vive en una
@@ -40,6 +45,23 @@ export class AuthService {
 
   isAuthenticated(): boolean {
     return !!this.accessToken;
+  }
+
+  /** True si el access token sigue vigente por al menos ~30 min.
+   *  Sirve para evitar refrescar en cada navegación (el refresh rota el
+   *  token y dispara escrituras de cookie). */
+  isAccessTokenFresh(): boolean {
+    const token = this.accessToken;
+    if (!token) return false;
+    try {
+      const payload = JSON.parse(
+        atob(token.split('.')[1].replace(/-/g, '+').replace(/_/g, '/')),
+      );
+      const expiresInMs = (payload.exp as number) * 1000 - Date.now();
+      return expiresInMs > 30 * 60 * 1000;
+    } catch {
+      return false;
+    }
   }
 
   getCurrentUser(): User | null {
@@ -63,12 +85,17 @@ export class AuthService {
   }
 
   refresh(): Observable<AccessTokenResponse> {
-    return this.http
-      .post<AccessTokenResponse>(`${this.baseUrl}/refresh/`, {})
-      .pipe(
-        retryTransient(3),
-        tap(({ access }) => localStorage.setItem(ACCESS_TOKEN_KEY, access)),
-      );
+    if (!this.refreshRequest) {
+      this.refreshRequest = this.http
+        .post<AccessTokenResponse>(`${this.baseUrl}/refresh/`, {})
+        .pipe(
+          retryTransient(3),
+          tap(({ access }) => localStorage.setItem(ACCESS_TOKEN_KEY, access)),
+          finalize(() => (this.refreshRequest = null)),
+          shareReplay({ bufferSize: 1, refCount: true }),
+        );
+    }
+    return this.refreshRequest;
   }
 
   logout(): Observable<unknown> {

@@ -135,9 +135,12 @@ if VERCEL_HOST not in ALLOWED_HOSTS:
     ALLOWED_HOSTS.append(VERCEL_HOST)
 COOKIE_SECURE = config('COOKIE_SECURE', default=(ENVIRONMENT == 'production'), cast=bool)
 CORS_ALLOW_CREDENTIALS = True
+# En producción Vercel proxyea /api al mismo origen (kmsplit.vercel.app), así
+# que las requests son same-site y Lax es suficiente.  None cause problemas
+# con Safari mobile (ITP las rechaza o limita a 24 h).
 COOKIE_SAMESITE = config(
     'COOKIE_SAMESITE',
-    default=('None' if ENVIRONMENT == 'production' else 'Lax'),
+    default='Lax',
 )
 
 REST_FRAMEWORK = {
