@@ -63,7 +63,7 @@ KmSplit/
 ```
 ## 📸 Capturas / Demo
 
-> Se agregarán capturas de pantalla de todo el avance del proyecto, como los diagramas de flujo, capturas de los wireframes y el modelo relacional de la base de datos en esta primera estapa.        
+> Se agregaron capturas de pantalla de todo el avance del proyecto, como los diagramas de flujo, capturas de los wireframes y el modelo relacional de la base de datos en la primera estapa de proyecto.        
 >
 
 ### 🔄 Diagrama de Flujo
@@ -133,7 +133,7 @@ Gama de azules y grises pensada para transmitir claridad y confianza, con acento
 > 
 Ver paleta completa:     
 > <img width="1239" height="331" alt="image" src="https://github.com/user-attachments/assets/4cfcc940-c68d-421c-ae1f-398d73609b13" />        
-Link al Figma: https://www.figma.com/design/laSA5OAyx2tbP8l0ezerSE/KmSplit?node-id=0-1&t=eRqsWqXdQEigd7KL-1    
+[Link al Figma](https://www.figma.com/design/laSA5OAyx2tbP8l0ezerSE/KmSplit?node-id=0-1&t=eRqsWqXdQEigd7KL-1)    
 
 📱 **Wireframes (Mobile-First)**    
 Antes de escribir código se diseñaron los wireframes de baja fidelidad de las 9 pantallas del MVP, priorizando un flujo mobile-first ya que la carga de datos (viajes y combustible) se hace principalmente desde el celular, al lado del auto.    
@@ -161,7 +161,7 @@ Para este proyecto se diseñó el Modelo Relacional utilizando dbdiagram.io, una
 - Mantenibilidad Extensible: Al estar escrito en código DBML, cualquier cambio futuro en el modelo se puede versionar en Git de la misma manera que el código fuente de la aplicación.
 - Agilidad en el Desarrollo: Sirve como una guía visual directa para escribir las migraciones, modelos o consultas en el backend sin lugar a ambigüedades.
 
-Link al Diagrama del Modelo Relacional: https://dbdiagram.io/d/KmSplit-6a5079094ac62e474c724e47     
+[Link al Diagrama del Modelo Relacional](https://dbdiagram.io/d/KmSplit-6a5079094ac62e474c724e47)     
 
 <img width="1239" height="798" alt="image" src="https://github.com/user-attachments/assets/03323a2e-888f-42a1-b673-3a5da96884dc" />
 
@@ -178,12 +178,12 @@ Link al Diagrama del Modelo Relacional: https://dbdiagram.io/d/KmSplit-6a5079094
 - [x] CRUD básico (viajes, cargas, grupos)
 - [x] Lógica de liquidación/reparto
 - [x] Frontend mobile-first
-- [ ] Deploy
-- [ ] Funcionalidades extra (invitar por link, exportar PDF, multi-vehículo)
+- [x] Deploy
+- [ ] Funcionalidades extra (login con google, invitar por link, exportar PDF)
 
 ## 👤 Autor
 
-**Mariano** — Estudiante de la Tecnicatura Superior en Desarrollo de Software (TSDS), ISPC, Córdoba, Argentina.
+**Mariano Casarino** — Estudiante de la Tecnicatura Superior en Desarrollo de Software (TSDS), ISPC, Córdoba, Argentina.
 Full Stack Developer Jr en formación | [LinkedIn](www.linkedin.com/in/mariano-casarino) | [Portfolio](https://github.com/marian-casa)
 
 ## 📄 Licencia
