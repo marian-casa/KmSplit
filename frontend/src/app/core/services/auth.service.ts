@@ -30,6 +30,10 @@ export class AuthService {
    *  Evita que la rotación invalide tokens entre sí y cierre la sesión. */
   private refreshRequest: Observable<AccessTokenResponse> | null = null;
 
+  /** fetchMe() compartido: evita disparar /auth/me en cada pantalla cuando
+   *  ya está en vuelo (varios componentes montando a la vez). */
+  private fetchMeRequest: Observable<User> | null = null;
+
   get accessToken(): string | null {
     return localStorage.getItem(ACCESS_TOKEN_KEY);
   }
@@ -74,10 +78,26 @@ export class AuthService {
     return this.http.post<User>(`${this.baseUrl}/register/`, payload);
   }
 
+  /**
+   * Devuelve el usuario actual. Solo hace GET /auth/me cuando hace falta:
+   * reutiliza el usuario cacheado mientras la sesión esté activa y comparte
+   * una sola request si varios componentes lo piden a la vez.
+   */
   fetchMe(): Observable<User> {
-    return this.http
-      .get<User>(`${this.baseUrl}/me/`)
-      .pipe(tap((user) => this.currentUserSubject.next(user)));
+    const cached = this.currentUserSubject.getValue();
+    if (cached && this.isAuthenticated()) {
+      return of(cached);
+    }
+    if (!this.fetchMeRequest) {
+      this.fetchMeRequest = this.http
+        .get<User>(`${this.baseUrl}/me/`)
+        .pipe(
+          tap((user) => this.currentUserSubject.next(user)),
+          finalize(() => (this.fetchMeRequest = null)),
+          shareReplay({ bufferSize: 1, refCount: true }),
+        );
+    }
+    return this.fetchMeRequest;
   }
 
   /** Renueva la sesión.  Intenta: cookie httpOnly (primario) → body

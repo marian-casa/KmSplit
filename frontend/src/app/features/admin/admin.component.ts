@@ -2,6 +2,7 @@ import { CommonModule } from '@angular/common';
 import { Component, inject, signal } from '@angular/core';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { ActivatedRoute, RouterLink } from '@angular/router';
+import { forkJoin } from 'rxjs';
 
 import { Group, GroupMembership, GroupRole } from '../../core/models/group.model';
 import { FuelType, Vehicle } from '../../core/models/vehicle.model';
@@ -69,24 +70,25 @@ export class AdminComponent {
   }
 
   constructor() {
-    this.auth.fetchMe().subscribe((user) => {
-      this.currentUserId = user.id;
-
-      this.vehicleService.get(this.vehicleId).subscribe({
-        next: (vehicle) => {
-          this.vehicle.set(vehicle);
-          this.form.patchValue({
-            name: vehicle.name,
-            fuel_type: vehicle.fuel_type,
-            current_km: vehicle.current_km,
-          });
-          this.loadGroup(vehicle.group);
-        },
-        error: () => {
-          this.errorMessage.set('No pudimos cargar este vehículo.');
-          this.loading.set(false);
-        },
-      });
+    // Velocidad: usuario y vehículo son independientes -> paralelo.
+    forkJoin({
+      user: this.auth.fetchMe(),
+      vehicle: this.vehicleService.get(this.vehicleId),
+    }).subscribe({
+      next: ({ user, vehicle }) => {
+        this.currentUserId = user.id;
+        this.vehicle.set(vehicle);
+        this.form.patchValue({
+          name: vehicle.name,
+          fuel_type: vehicle.fuel_type,
+          current_km: vehicle.current_km,
+        });
+        this.loadGroup(vehicle.group);
+      },
+      error: () => {
+        this.errorMessage.set('No pudimos cargar este vehículo.');
+        this.loading.set(false);
+      },
     });
   }
 

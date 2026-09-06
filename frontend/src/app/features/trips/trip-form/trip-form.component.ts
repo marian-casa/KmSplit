@@ -2,6 +2,7 @@ import { CommonModule } from '@angular/common';
 import { Component, inject, signal } from '@angular/core';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
+import { forkJoin } from 'rxjs';
 
 import { Trip } from '../../../core/models/trip.model';
 import { AuthService } from '../../../core/services/auth.service';
@@ -64,40 +65,41 @@ export class TripFormComponent {
     // ajeno, según permisos), viene marcado en la URL: ?tripId=123
     const tripIdToEdit = this.route.snapshot.queryParamMap.get('tripId');
 
-    this.auth.fetchMe().subscribe((user) => {
-      this.userName.set(user.name);
+    // Velocidad: usuario, vehículo y viajes son independientes -> paralelo.
+    forkJoin({
+      user: this.auth.fetchMe(),
+      vehicle: this.vehicleService.get(this.vehicleId),
+      trips: this.tripService.listByVehicle(this.vehicleId),
+    }).subscribe({
+      next: ({ user, vehicle, trips }) => {
+        this.userName.set(user.name);
 
-      this.vehicleService.get(this.vehicleId).subscribe((vehicle) => {
-        this.tripService.listByVehicle(this.vehicleId).subscribe({
-          next: (trips) => {
-            const lastRegisteredTrip = trips.reduce<Trip | null>(
-              (latest, t) => (!latest || t.id > latest.id ? t : latest),
-              null,
-            );
-            const defaultStartKm = lastRegisteredTrip
-              ? lastRegisteredTrip.end_km
-              : vehicle.current_km;
-            this.form.patchValue({ start_km: defaultStartKm });
+        const lastRegisteredTrip = trips.reduce<Trip | null>(
+          (latest, t) => (!latest || t.id > latest.id ? t : latest),
+          null,
+        );
+        const defaultStartKm = lastRegisteredTrip
+          ? lastRegisteredTrip.end_km
+          : vehicle.current_km;
+        this.form.patchValue({ start_km: defaultStartKm });
 
-            const ownTrips = trips
-              .filter((t) => t.user === user.id)
-              .sort((a, b) =>
-                a.trip_date === b.trip_date ? b.id - a.id : a.trip_date < b.trip_date ? 1 : -1,
-              );
-            this.lastOwnTrip.set(ownTrips[0] ?? null);
+        const ownTrips = trips
+          .filter((t) => t.user === user.id)
+          .sort((a, b) =>
+            a.trip_date === b.trip_date ? b.id - a.id : a.trip_date < b.trip_date ? 1 : -1,
+          );
+        this.lastOwnTrip.set(ownTrips[0] ?? null);
 
-            if (tripIdToEdit) {
-              const trip = trips.find((t) => t.id === Number(tripIdToEdit));
-              if (trip) {
-                this.applyTripToForm(trip);
-              }
-            }
+        if (tripIdToEdit) {
+          const trip = trips.find((t) => t.id === Number(tripIdToEdit));
+          if (trip) {
+            this.applyTripToForm(trip);
+          }
+        }
 
-            this.loadingContext.set(false);
-          },
-          error: () => this.loadingContext.set(false),
-        });
-      });
+        this.loadingContext.set(false);
+      },
+      error: () => this.loadingContext.set(false),
     });
   }
 

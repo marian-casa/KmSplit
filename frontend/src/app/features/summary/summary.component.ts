@@ -66,29 +66,33 @@ export class SummaryComponent {
   ];
 
   constructor() {
-    this.vehicleService.get(this.vehicleId).subscribe((vehicle) => {
-      this.vehicle.set(vehicle);
+    // Velocidad: vehicle y los datos son independientes (solo dependen del
+    // vehicleId de la URL) -> paralelo. group depende de vehicle.group, que
+    // ya llega cacheado desde vehicle-home, así que casi siempre es instantáneo.
+    forkJoin({
+      vehicle: this.vehicleService.get(this.vehicleId),
+      trips: this.tripService.listByVehicle(this.vehicleId),
+      fuelLoads: this.fuelLoadService.listByVehicle(this.vehicleId),
+      settlements: this.settlementService.listByVehicle(this.vehicleId),
+    }).subscribe({
+      next: ({ vehicle, trips, fuelLoads, settlements }) => {
+        this.vehicle.set(vehicle);
+        this.trips.set(trips);
+        this.fuelLoads.set(fuelLoads);
+        this.settlements.set(settlements);
 
-      this.groupService.get(vehicle.group).subscribe((group) => {
-        this.group.set(group);
-
-        forkJoin({
-          trips: this.tripService.listByVehicle(this.vehicleId),
-          fuelLoads: this.fuelLoadService.listByVehicle(this.vehicleId),
-          settlements: this.settlementService.listByVehicle(this.vehicleId),
-        }).subscribe({
-          next: ({ trips, fuelLoads, settlements }) => {
-            this.trips.set(trips);
-            this.fuelLoads.set(fuelLoads);
-            this.settlements.set(settlements);
+        this.groupService.get(vehicle.group).subscribe({
+          next: (group) => {
+            this.group.set(group);
             this.loading.set(false);
           },
-          error: () => {
-            this.errorMessage.set('No pudimos cargar el resumen.');
-            this.loading.set(false);
-          },
+          error: () => this.loading.set(false),
         });
-      });
+      },
+      error: () => {
+        this.errorMessage.set('No pudimos cargar el resumen.');
+        this.loading.set(false);
+      },
     });
   }
 

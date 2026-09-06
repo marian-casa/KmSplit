@@ -1,6 +1,7 @@
 import { CommonModule } from '@angular/common';
 import { Component, inject, signal } from '@angular/core';
 import { ActivatedRoute, RouterLink } from '@angular/router';
+import { forkJoin } from 'rxjs';
 
 import { Group, GroupMembership, GroupRole } from '../../../core/models/group.model';
 import { Vehicle } from '../../../core/models/vehicle.model';
@@ -44,40 +45,32 @@ export class VehicleHomeComponent {
     this.loading.set(true);
     this.errorMessage.set(null);
 
-    this.auth
-      .fetchMe()
-      .pipe(retryTransient(3))
-      .subscribe({
-        next: (user) => {
-          this.currentUserId = user.id;
+    // fetchMe y vehicle son independientes: corren en paralelo. vehicle.group
+    // (depende del vehicle) se consulta después, ya cacheado.
+    forkJoin({
+      user: this.auth.fetchMe().pipe(retryTransient(3)),
+      vehicle: this.vehicleService.get(this.vehicleId).pipe(retryTransient(3)),
+    }).subscribe({
+      next: ({ user, vehicle }) => {
+        this.currentUserId = user.id;
+        this.vehicleService.setLastVehicleId(vehicle.id);
+        // el grupo del vehículo pasa a ser el "activo" para que el botón
+        // volver (‹) te devuelva siempre a la lista de su grupo
+        this.groupService.setActiveGroupId(vehicle.group);
+        this.vehicle.set(vehicle);
 
-          this.vehicleService
-            .get(this.vehicleId)
-            .pipe(retryTransient(3))
-            .subscribe({
-              next: (vehicle) => {
-                this.vehicleService.setLastVehicleId(vehicle.id);
-                // el grupo del vehículo pasa a ser el "activo" para que el botón
-                // volver (‹) te devuelva siempre a la lista de su grupo
-                this.groupService.setActiveGroupId(vehicle.group);
-                this.vehicle.set(vehicle);
-                this.groupService.get(vehicle.group).subscribe({
-                  next: (group) => {
-                    this.group.set(group);
-                    const membership = group.members.find(
-                      (m) => m.user === this.currentUserId,
-                    );
-                    this.myRole.set(membership?.role ?? null);
-                    this.loading.set(false);
-                  },
-                  error: () => this.loading.set(false),
-                });
-              },
-              error: () => this.failLoading(),
-            });
-        },
-        error: () => this.failLoading(),
-      });
+        this.groupService.get(vehicle.group).subscribe({
+          next: (group) => {
+            this.group.set(group);
+            const membership = group.members.find((m) => m.user === this.currentUserId);
+            this.myRole.set(membership?.role ?? null);
+            this.loading.set(false);
+          },
+          error: () => this.loading.set(false),
+        });
+      },
+      error: () => this.failLoading(),
+    });
   }
 
   // Si tras reintentar la vista del vehículo no carga (éxito el típico fallo

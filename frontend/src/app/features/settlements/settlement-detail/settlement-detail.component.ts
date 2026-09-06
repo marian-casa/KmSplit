@@ -1,6 +1,7 @@
 import { CommonModule } from '@angular/common';
 import { Component, inject, signal } from '@angular/core';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
+import { forkJoin } from 'rxjs';
 
 import { Settlement, SettlementStatus } from '../../../core/models/settlement.model';
 import { AuthService } from '../../../core/services/auth.service';
@@ -42,21 +43,30 @@ export class SettlementDetailComponent {
   deleteDialog = signal(false);
 
   constructor() {
-    this.settlementService.get(this.settlementId).subscribe({
-      next: (settlement) => {
+    // Velocidad: settlement y el usuario son independientes -> paralelo.
+    forkJoin({
+      settlement: this.settlementService.get(this.settlementId),
+      user: this.auth.fetchMe(),
+    }).subscribe({
+      next: ({ settlement, user }) => {
         this.settlement.set(settlement);
 
-        this.auth.fetchMe().subscribe((user) => {
-          this.vehicleService.get(this.vehicleId).subscribe((vehicle) => {
+        // vehicle (independiente) → luego group (depende del vehicle; ya
+        // cacheado desde vehicle-home, así que casi siempre es instantáneo).
+        this.vehicleService.get(this.vehicleId).subscribe({
+          next: (vehicle) => {
             this.groupService.get(vehicle.group).subscribe({
               next: (group) => {
                 const membership = group.members.find((m) => m.user === user.id);
-                this.canManage.set(membership?.role === 'owner' || membership?.role === 'admin');
+                this.canManage.set(
+                  membership?.role === 'owner' || membership?.role === 'admin',
+                );
                 this.loading.set(false);
               },
               error: () => this.loading.set(false),
             });
-          });
+          },
+          error: () => this.loading.set(false),
         });
       },
       error: () => {

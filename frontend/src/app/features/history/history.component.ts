@@ -77,40 +77,40 @@ export class HistoryComponent {
   private currentUserRole = signal<GroupRole | null>(null);
 
   constructor() {
-    this.auth.fetchMe().subscribe((user) => {
-      this.currentUserId = user.id;
-
-      this.vehicleService.get(this.vehicleId).subscribe((vehicle) => {
+    // Velocidad: vehicle, datos y el usuario son independientes -> paralelo.
+    // group depende de vehicle.group (ya cacheado desde vehicle-home).
+    forkJoin({
+      user: this.auth.fetchMe(),
+      vehicle: this.vehicleService.get(this.vehicleId),
+      trips: this.tripService.listByVehicle(this.vehicleId),
+      fuelLoads: this.fuelLoadService.listByVehicle(this.vehicleId),
+      settlements: this.settlementService.listByVehicle(this.vehicleId),
+    }).subscribe({
+      next: ({ user, vehicle, trips, fuelLoads, settlements }) => {
+        this.currentUserId = user.id;
         this.vehicle.set(vehicle);
+        this.trips.set(trips);
+        this.fuelLoads.set(fuelLoads);
+        this.settlements.set(settlements);
 
-        this.groupService.get(vehicle.group).subscribe((group) => {
-          this.group.set(group);
-          const membership = group.members.find((m) => m.user === user.id);
-          this.currentUserRole.set(membership?.role ?? null);
+        const map = new Map<number, number>();
+        settlements.forEach((s) => map.set(s.fuel_load, s.id));
+        this.fuelLoadToSettlement.set(map);
 
-          forkJoin({
-            trips: this.tripService.listByVehicle(this.vehicleId),
-            fuelLoads: this.fuelLoadService.listByVehicle(this.vehicleId),
-            settlements: this.settlementService.listByVehicle(this.vehicleId),
-          }).subscribe({
-            next: ({ trips, fuelLoads, settlements }) => {
-              this.trips.set(trips);
-              this.fuelLoads.set(fuelLoads);
-              this.settlements.set(settlements);
-
-              const map = new Map<number, number>();
-              settlements.forEach((s) => map.set(s.fuel_load, s.id));
-              this.fuelLoadToSettlement.set(map);
-
-              this.loading.set(false);
-            },
-            error: () => {
-              this.errorMessage.set('No pudimos cargar el historial.');
-              this.loading.set(false);
-            },
-          });
+        this.groupService.get(vehicle.group).subscribe({
+          next: (group) => {
+            this.group.set(group);
+            const membership = group.members.find((m) => m.user === user.id);
+            this.currentUserRole.set(membership?.role ?? null);
+            this.loading.set(false);
+          },
+          error: () => this.loading.set(false),
         });
-      });
+      },
+      error: () => {
+        this.errorMessage.set('No pudimos cargar el historial.');
+        this.loading.set(false);
+      },
     });
   }
 
