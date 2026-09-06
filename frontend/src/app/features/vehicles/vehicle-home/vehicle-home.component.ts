@@ -1,7 +1,7 @@
 import { CommonModule } from '@angular/common';
-import { Component, inject, signal } from '@angular/core';
+import { Component, OnInit, inject, signal } from '@angular/core';
 import { ActivatedRoute, RouterLink } from '@angular/router';
-import { forkJoin } from 'rxjs';
+import { catchError, forkJoin, of } from 'rxjs';
 
 import { Group, GroupMembership, GroupRole } from '../../../core/models/group.model';
 import { Vehicle } from '../../../core/models/vehicle.model';
@@ -20,7 +20,7 @@ import { retryTransient } from '../../../shared/utils/retry-transient.util';
   templateUrl: './vehicle-home.component.html',
   styleUrl: './vehicle-home.component.scss',
 })
-export class VehicleHomeComponent {
+export class VehicleHomeComponent implements OnInit {
   private route = inject(ActivatedRoute);
   private vehicleService = inject(VehicleService);
   private groupService = inject(GroupService);
@@ -37,7 +37,7 @@ export class VehicleHomeComponent {
   currentUserId = 0;
   myRole = signal<GroupRole | null>(null);
 
-  constructor() {
+  ngOnInit(): void {
     this.loadVehicle();
   }
 
@@ -45,14 +45,15 @@ export class VehicleHomeComponent {
     this.loading.set(true);
     this.errorMessage.set(null);
 
-    // fetchMe y vehicle son independientes: corren en paralelo. vehicle.group
+    // fetchMe y vehicle son independientes: corren en paralelo. fetchMe es
+    // resiliente (si falla, el vehículo igual se muestra); vehicle.group
     // (depende del vehicle) se consulta después, ya cacheado.
     forkJoin({
-      user: this.auth.fetchMe().pipe(retryTransient(3)),
+      user: this.auth.fetchMe().pipe(retryTransient(3), catchError(() => of(null))),
       vehicle: this.vehicleService.get(this.vehicleId).pipe(retryTransient(3)),
     }).subscribe({
       next: ({ user, vehicle }) => {
-        this.currentUserId = user.id;
+        if (user) this.currentUserId = user.id;
         this.vehicleService.setLastVehicleId(vehicle.id);
         // el grupo del vehículo pasa a ser el "activo" para que el botón
         // volver (‹) te devuelva siempre a la lista de su grupo

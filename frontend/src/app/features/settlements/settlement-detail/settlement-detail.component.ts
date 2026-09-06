@@ -1,7 +1,7 @@
 import { CommonModule } from '@angular/common';
-import { Component, inject, signal } from '@angular/core';
+import { Component, OnInit, inject, signal } from '@angular/core';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
-import { forkJoin } from 'rxjs';
+import { catchError, forkJoin, of } from 'rxjs';
 
 import { Settlement, SettlementStatus } from '../../../core/models/settlement.model';
 import { AuthService } from '../../../core/services/auth.service';
@@ -19,7 +19,7 @@ import { ArgNumberPipe } from '../../../shared/pipes/arg-number.pipe';
   templateUrl: './settlement-detail.component.html',
   styleUrl: './settlement-detail.component.scss',
 })
-export class SettlementDetailComponent {
+export class SettlementDetailComponent implements OnInit {
   private route = inject(ActivatedRoute);
   private router = inject(Router);
   private settlementService = inject(SettlementService);
@@ -42,11 +42,13 @@ export class SettlementDetailComponent {
   deleting = signal(false);
   deleteDialog = signal(false);
 
-  constructor() {
+  ngOnInit(): void {
     // Velocidad: settlement y el usuario son independientes -> paralelo.
+    // fetchMe es resiliente: si falla, la liquidación igual se muestra (solo
+    // se ocultan los botones de editar/eliminar).
     forkJoin({
       settlement: this.settlementService.get(this.settlementId),
-      user: this.auth.fetchMe(),
+      user: this.auth.fetchMe().pipe(catchError(() => of(null))),
     }).subscribe({
       next: ({ settlement, user }) => {
         this.settlement.set(settlement);
@@ -57,7 +59,9 @@ export class SettlementDetailComponent {
           next: (vehicle) => {
             this.groupService.get(vehicle.group).subscribe({
               next: (group) => {
-                const membership = group.members.find((m) => m.user === user.id);
+                const membership = user
+                  ? group.members.find((m) => m.user === user.id)
+                  : undefined;
                 this.canManage.set(
                   membership?.role === 'owner' || membership?.role === 'admin',
                 );

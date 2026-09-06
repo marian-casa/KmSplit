@@ -1,8 +1,8 @@
 import { CommonModule } from '@angular/common';
-import { Component, inject, signal } from '@angular/core';
+import { Component, OnInit, inject, signal } from '@angular/core';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
-import { forkJoin } from 'rxjs';
+import { catchError, forkJoin, of } from 'rxjs';
 
 import { Trip } from '../../../core/models/trip.model';
 import { AuthService } from '../../../core/services/auth.service';
@@ -34,7 +34,7 @@ function calcularKmFinal(kmReferencia: number, digitos: string): number {
   templateUrl: './trip-form.component.html',
   styleUrl: './trip-form.component.scss',
 })
-export class TripFormComponent {
+export class TripFormComponent implements OnInit {
   private fb = inject(FormBuilder);
   private route = inject(ActivatedRoute);
   private router = inject(Router);
@@ -60,19 +60,21 @@ export class TripFormComponent {
     end_km_full: [null as number | null],
   });
 
-  constructor() {
+  ngOnInit(): void {
     // si venimos desde el historial a editar un viaje puntual (propio o
     // ajeno, según permisos), viene marcado en la URL: ?tripId=123
     const tripIdToEdit = this.route.snapshot.queryParamMap.get('tripId');
 
     // Velocidad: usuario, vehículo y viajes son independientes -> paralelo.
+    // fetchMe es resiliente: si falla, el formulario igual se arma (solo se
+    // pierde el nombre del usuario logueado por defecto).
     forkJoin({
-      user: this.auth.fetchMe(),
+      user: this.auth.fetchMe().pipe(catchError(() => of(null))),
       vehicle: this.vehicleService.get(this.vehicleId),
       trips: this.tripService.listByVehicle(this.vehicleId),
     }).subscribe({
       next: ({ user, vehicle, trips }) => {
-        this.userName.set(user.name);
+        if (user) this.userName.set(user.name);
 
         const lastRegisteredTrip = trips.reduce<Trip | null>(
           (latest, t) => (!latest || t.id > latest.id ? t : latest),
@@ -83,11 +85,13 @@ export class TripFormComponent {
           : vehicle.current_km;
         this.form.patchValue({ start_km: defaultStartKm });
 
-        const ownTrips = trips
-          .filter((t) => t.user === user.id)
-          .sort((a, b) =>
-            a.trip_date === b.trip_date ? b.id - a.id : a.trip_date < b.trip_date ? 1 : -1,
-          );
+        const ownTrips = user
+          ? trips
+              .filter((t) => t.user === user.id)
+              .sort((a, b) =>
+                a.trip_date === b.trip_date ? b.id - a.id : a.trip_date < b.trip_date ? 1 : -1,
+              )
+          : [];
         this.lastOwnTrip.set(ownTrips[0] ?? null);
 
         if (tripIdToEdit) {

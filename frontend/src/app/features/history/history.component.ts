@@ -1,7 +1,7 @@
 import { CommonModule } from '@angular/common';
-import { Component, inject, signal } from '@angular/core';
+import { Component, OnInit, inject, signal } from '@angular/core';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
-import { forkJoin } from 'rxjs';
+import { catchError, forkJoin, of } from 'rxjs';
 
 import { FuelLoad } from '../../core/models/fuel-load.model';
 import { Group, GroupRole } from '../../core/models/group.model';
@@ -50,7 +50,7 @@ interface KmGap {
   templateUrl: './history.component.html',
   styleUrl: './history.component.scss',
 })
-export class HistoryComponent {
+export class HistoryComponent implements OnInit {
   private route = inject(ActivatedRoute);
   private router = inject(Router);
   private vehicleService = inject(VehicleService);
@@ -76,18 +76,19 @@ export class HistoryComponent {
   private currentUserId = 0;
   private currentUserRole = signal<GroupRole | null>(null);
 
-  constructor() {
+  ngOnInit(): void {
     // Velocidad: vehicle, datos y el usuario son independientes -> paralelo.
-    // group depende de vehicle.group (ya cacheado desde vehicle-home).
+    // fetchMe es resiliente: si falla, el historial igual se muestra (solo se
+    // pierde la edición de viajes ajenos). group depende del vehicle.
     forkJoin({
-      user: this.auth.fetchMe(),
+      user: this.auth.fetchMe().pipe(catchError(() => of(null))),
       vehicle: this.vehicleService.get(this.vehicleId),
       trips: this.tripService.listByVehicle(this.vehicleId),
       fuelLoads: this.fuelLoadService.listByVehicle(this.vehicleId),
       settlements: this.settlementService.listByVehicle(this.vehicleId),
     }).subscribe({
       next: ({ user, vehicle, trips, fuelLoads, settlements }) => {
-        this.currentUserId = user.id;
+        if (user) this.currentUserId = user.id;
         this.vehicle.set(vehicle);
         this.trips.set(trips);
         this.fuelLoads.set(fuelLoads);
@@ -100,7 +101,9 @@ export class HistoryComponent {
         this.groupService.get(vehicle.group).subscribe({
           next: (group) => {
             this.group.set(group);
-            const membership = group.members.find((m) => m.user === user.id);
+            const membership = user
+              ? group.members.find((m) => m.user === user.id)
+              : undefined;
             this.currentUserRole.set(membership?.role ?? null);
             this.loading.set(false);
           },

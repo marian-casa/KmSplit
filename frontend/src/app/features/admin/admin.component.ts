@@ -1,8 +1,8 @@
 import { CommonModule } from '@angular/common';
-import { Component, inject, signal } from '@angular/core';
+import { Component, OnInit, inject, signal } from '@angular/core';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { ActivatedRoute, RouterLink } from '@angular/router';
-import { forkJoin } from 'rxjs';
+import { catchError, forkJoin, of } from 'rxjs';
 
 import { Group, GroupMembership, GroupRole } from '../../core/models/group.model';
 import { FuelType, Vehicle } from '../../core/models/vehicle.model';
@@ -18,7 +18,7 @@ import { BottomNavComponent } from '../../shared/bottom-nav/bottom-nav.component
   templateUrl: './admin.component.html',
   styleUrl: './admin.component.scss',
 })
-export class AdminComponent {
+export class AdminComponent implements OnInit {
   private route = inject(ActivatedRoute);
   private fb = inject(FormBuilder);
   private vehicleService = inject(VehicleService);
@@ -69,14 +69,15 @@ export class AdminComponent {
     return (this.group()?.members ?? []).filter((m) => m.is_active);
   }
 
-  constructor() {
-    // Velocidad: usuario y vehículo son independientes -> paralelo.
+  ngOnInit(): void {
+    // Velocidad: usuario y vehículo son independientes -> paralelo. fetchMe es
+    // resiliente: si falla, la pantalla del vehículo igual se renderiza.
     forkJoin({
-      user: this.auth.fetchMe(),
+      user: this.auth.fetchMe().pipe(catchError(() => of(null))),
       vehicle: this.vehicleService.get(this.vehicleId),
     }).subscribe({
       next: ({ user, vehicle }) => {
-        this.currentUserId = user.id;
+        if (user) this.currentUserId = user.id;
         this.vehicle.set(vehicle);
         this.form.patchValue({
           name: vehicle.name,

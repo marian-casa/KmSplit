@@ -1,5 +1,5 @@
 import { CommonModule } from '@angular/common';
-import { Component, inject, signal } from '@angular/core';
+import { Component, OnInit, inject, signal } from '@angular/core';
 import { ActivatedRoute, RouterLink } from '@angular/router';
 import { forkJoin } from 'rxjs';
 
@@ -35,7 +35,7 @@ interface RecentRecord {
   templateUrl: './summary.component.html',
   styleUrl: './summary.component.scss',
 })
-export class SummaryComponent {
+export class SummaryComponent implements OnInit {
   private route = inject(ActivatedRoute);
   private vehicleService = inject(VehicleService);
   private groupService = inject(GroupService);
@@ -65,7 +65,7 @@ export class SummaryComponent {
     'var(--red-pink)',
   ];
 
-  constructor() {
+  ngOnInit(): void {
     // Velocidad: vehicle y los datos son independientes (solo dependen del
     // vehicleId de la URL) -> paralelo. group depende de vehicle.group, que
     // ya llega cacheado desde vehicle-home, así que casi siempre es instantáneo.
