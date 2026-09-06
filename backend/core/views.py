@@ -134,6 +134,38 @@ class VehicleViewSet(viewsets.ModelViewSet):
             group__members__user=self.request.user, group__members__is_active=True
         ).distinct()
 
+    @action(detail=True, methods=["get"], url_path="dashboard")
+    def dashboard(self, request, pk=None):
+        """GET /api/vehicles/{id}/dashboard/
+
+        Devuelve vehicle + group + trips + fuel_loads + settlements en 1
+        sola request. Optimiza las 4-5 requests que summary/history/etc.
+        hacían por separado (evita round-trips + serialización)."""
+        vehicle = self.get_object()
+
+        group = Group.objects.filter(
+            members__user=request.user, members__is_active=True
+        ).distinct().select_related().first()
+        # Si el vehicle pertenece a otro grupo del user, usar ese
+        if vehicle.group_id:
+            group = Group.objects.filter(id=vehicle.group_id).prefetch_related(
+                "members", "members__user"
+            ).first()
+
+        trips = Trip.objects.filter(vehicle=vehicle).order_by("-trip_date")
+        fuel_loads = FuelLoad.objects.filter(vehicle=vehicle).order_by("-load_date")
+        settlements = Settlement.objects.filter(vehicle=vehicle).prefetch_related(
+            "details", "details__user", "fuel_load", "fuel_load__loaded_by"
+        ).order_by("-created_at")
+
+        return Response({
+            "vehicle": VehicleSerializer(vehicle).data,
+            "group": GroupSerializer(group).data if group else None,
+            "trips": TripSerializer(trips, many=True).data,
+            "fuel_loads": FuelLoadSerializer(fuel_loads, many=True).data,
+            "settlements": SettlementSerializer(settlements, many=True).data,
+        })
+
     def perform_create(self, serializer):
         group = serializer.validated_data["group"]
         membership = get_membership(self.request.user, group)

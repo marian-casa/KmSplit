@@ -1,17 +1,12 @@
 import { CommonModule } from '@angular/common';
 import { Component, OnInit, inject, signal } from '@angular/core';
 import { ActivatedRoute, RouterLink } from '@angular/router';
-import { forkJoin } from 'rxjs';
 
 import { FuelLoad } from '../../core/models/fuel-load.model';
 import { Group } from '../../core/models/group.model';
 import { Settlement } from '../../core/models/settlement.model';
 import { Trip } from '../../core/models/trip.model';
 import { Vehicle } from '../../core/models/vehicle.model';
-import { FuelLoadService } from '../../core/services/fuel-load.service';
-import { GroupService } from '../../core/services/group.service';
-import { SettlementService } from '../../core/services/settlement.service';
-import { TripService } from '../../core/services/trip.service';
 import { VehicleService } from '../../core/services/vehicle.service';
 import { BottomNavComponent } from '../../shared/bottom-nav/bottom-nav.component';
 import { ArgNumberPipe } from '../../shared/pipes/arg-number.pipe';
@@ -38,10 +33,6 @@ interface RecentRecord {
 export class SummaryComponent implements OnInit {
   private route = inject(ActivatedRoute);
   private vehicleService = inject(VehicleService);
-  private groupService = inject(GroupService);
-  private tripService = inject(TripService);
-  private fuelLoadService = inject(FuelLoadService);
-  private settlementService = inject(SettlementService);
 
   vehicleId = Number(this.route.snapshot.paramMap.get('id'));
 
@@ -66,28 +57,16 @@ export class SummaryComponent implements OnInit {
   ];
 
   ngOnInit(): void {
-    // Velocidad: vehicle y los datos son independientes (solo dependen del
-    // vehicleId de la URL) -> paralelo. group depende de vehicle.group, que
-    // ya llega cacheado desde vehicle-home, así que casi siempre es instantáneo.
-    forkJoin({
-      vehicle: this.vehicleService.get(this.vehicleId),
-      trips: this.tripService.listByVehicle(this.vehicleId),
-      fuelLoads: this.fuelLoadService.listByVehicle(this.vehicleId),
-      settlements: this.settlementService.listByVehicle(this.vehicleId),
-    }).subscribe({
-      next: ({ vehicle, trips, fuelLoads, settlements }) => {
+    // Endpoint consolidado: vehicle + group + trips + fuelLoads + settlements
+    // en 1 sola request, sin round-trips seriales ni forks joins.
+    this.vehicleService.dashboard(this.vehicleId).subscribe({
+      next: ({ vehicle, group, trips, fuel_loads, settlements }) => {
         this.vehicle.set(vehicle);
+        this.group.set(group);
         this.trips.set(trips);
-        this.fuelLoads.set(fuelLoads);
+        this.fuelLoads.set(fuel_loads);
         this.settlements.set(settlements);
-
-        this.groupService.get(vehicle.group).subscribe({
-          next: (group) => {
-            this.group.set(group);
-            this.loading.set(false);
-          },
-          error: () => this.loading.set(false),
-        });
+        this.loading.set(false);
       },
       error: () => {
         this.errorMessage.set('No pudimos cargar el resumen.');

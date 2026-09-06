@@ -6,7 +6,6 @@ import { catchError, forkJoin, of } from 'rxjs';
 import { Settlement, SettlementStatus } from '../../../core/models/settlement.model';
 import { AuthService } from '../../../core/services/auth.service';
 import { FuelLoadService } from '../../../core/services/fuel-load.service';
-import { GroupService } from '../../../core/services/group.service';
 import { SettlementService } from '../../../core/services/settlement.service';
 import { VehicleService } from '../../../core/services/vehicle.service';
 import { BottomNavComponent } from '../../../shared/bottom-nav/bottom-nav.component';
@@ -25,7 +24,6 @@ export class SettlementDetailComponent implements OnInit {
   private settlementService = inject(SettlementService);
   private fuelLoadService = inject(FuelLoadService);
   private vehicleService = inject(VehicleService);
-  private groupService = inject(GroupService);
   private auth = inject(AuthService);
 
   vehicleId = Number(this.route.snapshot.paramMap.get('id'));
@@ -43,35 +41,33 @@ export class SettlementDetailComponent implements OnInit {
   deleteDialog = signal(false);
 
   ngOnInit(): void {
-    // Velocidad: settlement y el usuario son independientes -> paralelo.
-    // fetchMe es resiliente: si falla, la liquidación igual se muestra (solo
-    // se ocultan los botones de editar/eliminar).
+    // dashboard() trae vehicle + group + todos los settlements (con detalles)
+    // en 1 sola request; extraemos el que corresponde a esta URL. fetchMe es
+    // resiliente: si falla, la liquidación igual se muestra (solo se ocultan
+    // los botones de editar/eliminar).
     forkJoin({
-      settlement: this.settlementService.get(this.settlementId),
       user: this.auth.fetchMe().pipe(catchError(() => of(null))),
+      dashboard: this.vehicleService.dashboard(this.vehicleId),
     }).subscribe({
-      next: ({ settlement, user }) => {
+      next: ({ user, dashboard }) => {
+        const { vehicle, group, settlements } = dashboard;
+        const settlement = settlements.find((s) => s.id === this.settlementId);
+
+        if (!settlement) {
+          this.errorMessage.set('No pudimos cargar esta liquidación.');
+          this.loading.set(false);
+          return;
+        }
+
         this.settlement.set(settlement);
 
-        // vehicle (independiente) → luego group (depende del vehicle; ya
-        // cacheado desde vehicle-home, así que casi siempre es instantáneo).
-        this.vehicleService.get(this.vehicleId).subscribe({
-          next: (vehicle) => {
-            this.groupService.get(vehicle.group).subscribe({
-              next: (group) => {
-                const membership = user
-                  ? group.members.find((m) => m.user === user.id)
-                  : undefined;
-                this.canManage.set(
-                  membership?.role === 'owner' || membership?.role === 'admin',
-                );
-                this.loading.set(false);
-              },
-              error: () => this.loading.set(false),
-            });
-          },
-          error: () => this.loading.set(false),
-        });
+        const membership = user
+          ? group.members.find((m) => m.user === user.id)
+          : undefined;
+        this.canManage.set(
+          membership?.role === 'owner' || membership?.role === 'admin',
+        );
+        this.loading.set(false);
       },
       error: () => {
         this.errorMessage.set('No pudimos cargar esta liquidación.');

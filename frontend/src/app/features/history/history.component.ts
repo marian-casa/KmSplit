@@ -9,10 +9,6 @@ import { Settlement } from '../../core/models/settlement.model';
 import { Trip } from '../../core/models/trip.model';
 import { Vehicle } from '../../core/models/vehicle.model';
 import { AuthService } from '../../core/services/auth.service';
-import { FuelLoadService } from '../../core/services/fuel-load.service';
-import { GroupService } from '../../core/services/group.service';
-import { SettlementService } from '../../core/services/settlement.service';
-import { TripService } from '../../core/services/trip.service';
 import { VehicleService } from '../../core/services/vehicle.service';
 import { BottomNavComponent } from '../../shared/bottom-nav/bottom-nav.component';
 import { ArgNumberPipe } from '../../shared/pipes/arg-number.pipe';
@@ -54,10 +50,6 @@ export class HistoryComponent implements OnInit {
   private route = inject(ActivatedRoute);
   private router = inject(Router);
   private vehicleService = inject(VehicleService);
-  private groupService = inject(GroupService);
-  private tripService = inject(TripService);
-  private fuelLoadService = inject(FuelLoadService);
-  private settlementService = inject(SettlementService);
   private auth = inject(AuthService);
 
   vehicleId = Number(this.route.snapshot.paramMap.get('id'));
@@ -77,38 +69,30 @@ export class HistoryComponent implements OnInit {
   private currentUserRole = signal<GroupRole | null>(null);
 
   ngOnInit(): void {
-    // Velocidad: vehicle, datos y el usuario son independientes -> paralelo.
-    // fetchMe es resiliente: si falla, el historial igual se muestra (solo se
-    // pierde la edición de viajes ajenos). group depende del vehicle.
+    // dashboard() trae vehicle+group+trips+fuelLoads+settlements en 1 request.
+    // fetchMe es resiliente: si falla, el historial igual se muestra.
     forkJoin({
       user: this.auth.fetchMe().pipe(catchError(() => of(null))),
-      vehicle: this.vehicleService.get(this.vehicleId),
-      trips: this.tripService.listByVehicle(this.vehicleId),
-      fuelLoads: this.fuelLoadService.listByVehicle(this.vehicleId),
-      settlements: this.settlementService.listByVehicle(this.vehicleId),
+      dashboard: this.vehicleService.dashboard(this.vehicleId),
     }).subscribe({
-      next: ({ user, vehicle, trips, fuelLoads, settlements }) => {
+      next: ({ user, dashboard }) => {
         if (user) this.currentUserId = user.id;
+        const { vehicle, group, trips, fuel_loads, settlements } = dashboard;
         this.vehicle.set(vehicle);
+        this.group.set(group);
         this.trips.set(trips);
-        this.fuelLoads.set(fuelLoads);
+        this.fuelLoads.set(fuel_loads);
         this.settlements.set(settlements);
 
         const map = new Map<number, number>();
         settlements.forEach((s) => map.set(s.fuel_load, s.id));
         this.fuelLoadToSettlement.set(map);
 
-        this.groupService.get(vehicle.group).subscribe({
-          next: (group) => {
-            this.group.set(group);
-            const membership = user
-              ? group.members.find((m) => m.user === user.id)
-              : undefined;
-            this.currentUserRole.set(membership?.role ?? null);
-            this.loading.set(false);
-          },
-          error: () => this.loading.set(false),
-        });
+        const membership = user
+          ? group.members.find((m) => m.user === user.id)
+          : undefined;
+        this.currentUserRole.set(membership?.role ?? null);
+        this.loading.set(false);
       },
       error: () => {
         this.errorMessage.set('No pudimos cargar el historial.');

@@ -3,7 +3,7 @@ import { Injectable, inject } from '@angular/core';
 import { Observable, of, tap } from 'rxjs';
 
 import { environment } from '../../../environments/environment';
-import { Vehicle } from '../models/vehicle.model';
+import { Dashboard, Vehicle } from '../models/vehicle.model';
 
 /** Cuánto vive un vehículo cacheado (evita dato stale si cambia en otro lado). */
 const CACHE_TTL_MS = 30_000;
@@ -31,6 +31,12 @@ export class VehicleService {
     return this.http.get<Vehicle>(`${this.baseUrl}/${id}/`).pipe(
       tap((vehicle) => this.cache.set(id, { vehicle, fetchedAt: Date.now() })),
     );
+  }
+
+  /** Endpoint consolidado: vehicle + group + trips + fuelLoads + settlements
+   *  en 1 sola request. Reemplaza los forkJoin de 4-5 round-trips. */
+  dashboard(id: number): Observable<Dashboard> {
+    return this.http.get<Dashboard>(`${this.baseUrl}/${id}/dashboard/`);
   }
 
   create(data: Partial<Vehicle>): Observable<Vehicle> {
