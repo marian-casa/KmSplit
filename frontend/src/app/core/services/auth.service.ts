@@ -15,7 +15,7 @@ import { User } from '../models/user.model';
 import { retryTransient } from '../../shared/utils/retry-transient.util';
 
 const ACCESS_TOKEN_KEY = 'kmsplit_access_token';
-const LEGACY_REFRESH_TOKEN_KEY = 'kmsplit_refresh_token'; // ya no se usa, ver constructor
+const REFRESH_TOKEN_KEY = 'kmsplit_refresh_token';
 
 @Injectable({ providedIn: 'root' })
 export class AuthService {
@@ -29,15 +29,6 @@ export class AuthService {
    *  (interceptor ante varios 401 paralelos, guard, etc.) esperan el mismo.
    *  Evita que la rotación invalide tokens entre sí y cierre la sesión. */
   private refreshRequest: Observable<AccessTokenResponse> | null = null;
-
-  constructor() {
-    // Limpieza de una sola vez: versiones anteriores de la app guardaban
-    // el refresh token en localStorage bajo esta clave. Ahora vive en una
-    // cookie httpOnly (ver core/interceptors/auth.interceptor.ts), así que
-    // si quedó un valor viejo dando vueltas de antes de este cambio, lo
-    // borramos apenas arranca el servicio.
-    localStorage.removeItem(LEGACY_REFRESH_TOKEN_KEY);
-  }
 
   get accessToken(): string | null {
     return localStorage.getItem(ACCESS_TOKEN_KEY);
@@ -71,7 +62,12 @@ export class AuthService {
   login(payload: LoginRequest): Observable<AccessTokenResponse> {
     return this.http
       .post<AccessTokenResponse>(`${this.baseUrl}/login/`, payload)
-      .pipe(tap(({ access }) => localStorage.setItem(ACCESS_TOKEN_KEY, access)));
+      .pipe(
+        tap(({ access, refresh }) => {
+          localStorage.setItem(ACCESS_TOKEN_KEY, access);
+          if (refresh) localStorage.setItem(REFRESH_TOKEN_KEY, refresh);
+        }),
+      );
   }
 
   register(payload: RegisterRequest): Observable<User> {
@@ -84,13 +80,24 @@ export class AuthService {
       .pipe(tap((user) => this.currentUserSubject.next(user)));
   }
 
+  /** Renueva la sesión.  Intenta: cookie httpOnly (primario) → body
+   *  (respaldo para iOS PWA donde la cookie se limpia al relanzar la app).
+   *  El refresh token nuevo se almacena en AMBOS (cookie + localStorage). */
   refresh(): Observable<AccessTokenResponse> {
     if (!this.refreshRequest) {
+      // El body solo se usa si la cookie falta (backend lo ignora si la cookie existe).
+      const body: Record<string, string> = {};
+      const stored = localStorage.getItem(REFRESH_TOKEN_KEY);
+      if (stored) body['refresh'] = stored;
+
       this.refreshRequest = this.http
-        .post<AccessTokenResponse>(`${this.baseUrl}/refresh/`, {})
+        .post<AccessTokenResponse>(`${this.baseUrl}/refresh/`, body)
         .pipe(
           retryTransient(3),
-          tap(({ access }) => localStorage.setItem(ACCESS_TOKEN_KEY, access)),
+          tap(({ access, refresh }) => {
+            localStorage.setItem(ACCESS_TOKEN_KEY, access);
+            if (refresh) localStorage.setItem(REFRESH_TOKEN_KEY, refresh);
+          }),
           finalize(() => (this.refreshRequest = null)),
           shareReplay({ bufferSize: 1, refCount: true }),
         );
@@ -99,7 +106,13 @@ export class AuthService {
   }
 
   logout(): Observable<unknown> {
-    return this.http.post(`${this.baseUrl}/logout/`, {}).pipe(
+    // Enviar refresh en el body para que el backend lo invalide (blacklist)
+    // incluso si la cookie httpOnly fue limpiada (iOS PWA).
+    const body: Record<string, string> = {};
+    const stored = localStorage.getItem(REFRESH_TOKEN_KEY);
+    if (stored) body['refresh'] = stored;
+
+    return this.http.post(`${this.baseUrl}/logout/`, body).pipe(
       tap(() => this.clearLocalSession()),
       catchError(() => {
         this.clearLocalSession();
@@ -122,6 +135,7 @@ export class AuthService {
 
   private clearLocalSession(): void {
     localStorage.removeItem(ACCESS_TOKEN_KEY);
+    localStorage.removeItem(REFRESH_TOKEN_KEY);
     this.currentUserSubject.next(null);
   }
 }

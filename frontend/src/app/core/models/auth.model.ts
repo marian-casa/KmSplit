@@ -29,4 +29,6 @@ export interface PasswordResetConfirmRequest {
 
 export interface AccessTokenResponse {
   access: string;
+  /** Refresh token (respaldo en localStorage para iOS PWA que limpia cookies httpOnly). */
+  refresh?: string;
 }

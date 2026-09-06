@@ -135,8 +135,9 @@ class LockedLoginView(TokenObtainPairView):
             cache.delete(attempts_key)
             cache.delete(lockout_key)
 
-        # sacar el refresh del body y ponerlo como cookie httpOnly en su lugar
-        refresh_token = response.data.pop("refresh", None)
+        # sacar el refresh del body: lo devolvemos al frontend (respaldo en
+        # localStorage) Y lo seteamos como cookie httpOnly (mecanismo primario).
+        refresh_token = response.data.get("refresh")
         if refresh_token:
             remember = _parse_remember(request.data.get("remember", True))
             # inyectamos el claim "remember" en el refresh token para que la
@@ -167,7 +168,13 @@ class CookieTokenRefreshView(TokenRefreshView):
     """
 
     def post(self, request, *args, **kwargs):
-        refresh_token = request.COOKIES.get(REFRESH_COOKIE_NAME)
+        # Prioridad: cookie httpOnly (primario) → body (respaldo para iOS PWA
+        # donde la cookie se limpia al relanzar la app desde el atajo).
+        refresh_token = (
+            request.COOKIES.get(REFRESH_COOKIE_NAME)
+            or (request.data.get("refresh") or "").strip()
+            or None
+        )
         if not refresh_token:
             return Response({"detail": "No hay sesión activa."}, status=status.HTTP_401_UNAUTHORIZED)
 
@@ -183,9 +190,15 @@ class CookieTokenRefreshView(TokenRefreshView):
             return response
 
         data = serializer.validated_data
-        response = Response({"access": data["access"]})
-
         new_refresh = data.get("refresh")  # presente porque ROTATE_REFRESH_TOKENS=True
+        response = Response({
+            "access": data["access"],
+            # el refresh nuevo viaja en el body para que el frontend lo
+            # guarde como respaldo (localStorage); la cookie sigue siendo el
+            # mecanismo primario de sesión.
+            "refresh": new_refresh or "",
+        })
+
         if new_refresh:
             # preservamos la persistencia que el usuario eligió al iniciar
             # sesión (cookie de 7 días si marcó "recordarme", de sesión si no)
@@ -225,7 +238,12 @@ class LogoutView(APIView):
     permission_classes = [permissions.AllowAny]
 
     def post(self, request):
-        refresh_token = request.COOKIES.get(REFRESH_COOKIE_NAME)
+        # Cookie (primario) o body (respaldo para iOS PWA sin cookie).
+        refresh_token = (
+            request.COOKIES.get(REFRESH_COOKIE_NAME)
+            or (request.data.get("refresh") or "").strip()
+            or None
+        )
         if refresh_token:
             try:
                 RefreshToken(refresh_token).blacklist()
