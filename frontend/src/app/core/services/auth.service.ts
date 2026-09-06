@@ -88,16 +88,9 @@ export class AuthService {
     if (cached && this.isAuthenticated()) {
       return of(cached);
     }
-    if (!this.fetchMeRequest) {
-      this.fetchMeRequest = this.http
-        .get<User>(`${this.baseUrl}/me/`)
-        .pipe(
-          tap((user) => this.currentUserSubject.next(user)),
-          finalize(() => (this.fetchMeRequest = null)),
-          shareReplay({ bufferSize: 1, refCount: true }),
-        );
-    }
-    return this.fetchMeRequest;
+    return this.http.get<User>(`${this.baseUrl}/me/`).pipe(
+      tap((user) => this.currentUserSubject.next(user)),
+    );
   }
 
   /** Renueva la sesión.  Intenta: cookie httpOnly (primario) → body

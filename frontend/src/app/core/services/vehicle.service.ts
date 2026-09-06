@@ -1,6 +1,6 @@
 import { HttpClient } from '@angular/common/http';
 import { Injectable, inject } from '@angular/core';
-import { Observable, shareReplay, tap } from 'rxjs';
+import { Observable, of, tap } from 'rxjs';
 
 import { environment } from '../../../environments/environment';
 import { Vehicle } from '../models/vehicle.model';
@@ -15,9 +15,9 @@ export class VehicleService {
 
   private static readonly LAST_VEHICLE_KEY = 'kmsplit_last_vehicle';
 
-  /** Cache en memoria: id -> { fact, expiresAt }. Comparte la misma request
-   *  entre todas las pantallas que piden el mismo vehículo a la vez. */
-  private cache = new Map<number, { fact: Observable<Vehicle>; expiresAt: number }>();
+  /** Cache simple en memoria: id -> { vehicle, fetchedAt }. Evita requests
+   *  repetidas del mismo vehículo entre pantallas de una misma sesión. */
+  private cache = new Map<number, { vehicle: Vehicle; fetchedAt: number }>();
 
   list(): Observable<Vehicle[]> {
     return this.http.get<Vehicle[]>(`${this.baseUrl}/`);
@@ -25,15 +25,12 @@ export class VehicleService {
 
   get(id: number): Observable<Vehicle> {
     const hit = this.cache.get(id);
-    if (hit && hit.expiresAt > Date.now()) {
-      return hit.fact;
+    if (hit && Date.now() - hit.fetchedAt < CACHE_TTL_MS) {
+      return of(hit.vehicle);
     }
-    const fact = this.http.get<Vehicle>(`${this.baseUrl}/${id}/`).pipe(
-      tap((updated) => this.invalidateCache(updated.id)),
-      shareReplay({ bufferSize: 1, refCount: true }),
+    return this.http.get<Vehicle>(`${this.baseUrl}/${id}/`).pipe(
+      tap((vehicle) => this.cache.set(id, { vehicle, fetchedAt: Date.now() })),
     );
-    this.cache.set(id, { fact, expiresAt: Date.now() + CACHE_TTL_MS });
-    return fact;
   }
 
   create(data: Partial<Vehicle>): Observable<Vehicle> {
@@ -42,13 +39,8 @@ export class VehicleService {
 
   update(id: number, data: Partial<Vehicle>): Observable<Vehicle> {
     return this.http.patch<Vehicle>(`${this.baseUrl}/${id}/`, data).pipe(
-      tap((updated) => this.invalidateCache(updated.id)),
+      tap((updated) => this.cache.set(id, { vehicle: updated, fetchedAt: Date.now() })),
     );
-  }
-
-  /** Invalida el vehículo cacheado (tras un update, p.ej. cambiar la foto). */
-  private invalidateCache(id: number): void {
-    this.cache.delete(id);
   }
 
   /** Último vehículo que el usuario estuvo viendo, para volver a él por defecto. */

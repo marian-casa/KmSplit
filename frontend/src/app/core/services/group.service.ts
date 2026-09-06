@@ -1,6 +1,6 @@
 import { HttpClient } from '@angular/common/http';
 import { Injectable, inject } from '@angular/core';
-import { Observable, shareReplay, tap } from 'rxjs';
+import { Observable, of, tap } from 'rxjs';
 
 import { environment } from '../../../environments/environment';
 import { Group, GroupMembership } from '../models/group.model';
@@ -15,8 +15,8 @@ export class GroupService {
 
   private static readonly ACTIVE_GROUP_KEY = 'kmsplit_active_group';
 
-  /** Cache en memoria: id -> { fact, expiresAt }. */
-  private cache = new Map<number, { fact: Observable<Group>; expiresAt: number }>();
+  /** Cache simple en memoria: id -> { group, fetchedAt }. */
+  private cache = new Map<number, { group: Group; fetchedAt: number }>();
 
   list(): Observable<Group[]> {
     return this.http.get<Group[]>(`${this.baseUrl}/`);
@@ -39,15 +39,12 @@ export class GroupService {
 
   get(id: number): Observable<Group> {
     const hit = this.cache.get(id);
-    if (hit && hit.expiresAt > Date.now()) {
-      return hit.fact;
+    if (hit && Date.now() - hit.fetchedAt < CACHE_TTL_MS) {
+      return of(hit.group);
     }
-    const fact = this.http.get<Group>(`${this.baseUrl}/${id}/`).pipe(
-      tap((updated) => this.invalidateCache(updated.id)),
-      shareReplay({ bufferSize: 1, refCount: true }),
+    return this.http.get<Group>(`${this.baseUrl}/${id}/`).pipe(
+      tap((group) => this.cache.set(id, { group, fetchedAt: Date.now() })),
     );
-    this.cache.set(id, { fact, expiresAt: Date.now() + CACHE_TTL_MS });
-    return fact;
   }
 
   create(name: string): Observable<Group> {
@@ -69,10 +66,6 @@ export class GroupService {
   ): Observable<GroupMembership> {
     return this.http
       .patch<GroupMembership>(`${this.baseUrl}/${groupId}/members/${userId}/`, data)
-      .pipe(tap(() => this.invalidateCache(groupId)));
-  }
-
-  private invalidateCache(id: number): void {
-    this.cache.delete(id);
+      .pipe(tap(() => this.cache.delete(groupId)));
   }
 }
