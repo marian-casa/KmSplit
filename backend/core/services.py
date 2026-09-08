@@ -200,6 +200,15 @@ def assign_and_recalculate_trip(trip: Trip) -> Trip:
     Se llama después de crear o editar un Trip. Si el viaje encaja dentro de
     un settlement ya existente, lo asigna y dispara el recálculo de ese
     settlement (y del anterior, si el viaje se "mudó" de período al editarlo).
+
+    IMPORTANTE: el recálculo NO depende del FK `settlement`, porque ese FK solo
+    apunta al período que CONTIENE al viaje por completo. Si el viaje cruza un
+    límite (arranca dentro de una liquidación y termina en la siguiente) o los
+    períodos ya estaban cerrados cuando se cargó el viaje (FK = None aunque el
+    rango caiga dentro de un período liquidado), el settlement igual puede
+    SOLAPAR su rango y debe recalcularse (recalculate_settlement prorratea por
+    solapamiento/clip). Por eso se recalculan TODOS los settlements del vehículo
+    que solapan el rango del viaje, más el que apuntaba el FK antes de editar.
     """
     old_settlement = trip.settlement
     new_settlement = find_settlement_for_trip(trip)
@@ -208,10 +217,25 @@ def assign_and_recalculate_trip(trip: Trip) -> Trip:
         trip.settlement = new_settlement
         trip.save(update_fields=["settlement"])
 
-        if old_settlement:
-            recalculate_settlement(old_settlement)
-
+    # períodos afectados: el anterior FK + todos los que solapan el rango del
+    # viaje ahora mismo (incluye al nuevo FK). recalculate_settlement trata el
+    # HashSet, así que cada settlement se recalcula exactamente una vez.
+    affected = set()
+    if old_settlement:
+        affected.add(old_settlement.id)
     if new_settlement:
-        recalculate_settlement(new_settlement)
+        affected.add(new_settlement.id)
+
+    affected.update(
+        s.id
+        for s in Settlement.objects.filter(
+            vehicle=trip.vehicle,
+            period_start_km__lt=trip.end_km,
+            period_end_km__gt=trip.start_km,
+        )
+    )
+
+    for settlement_id in affected:
+        recalculate_settlement(Settlement.objects.get(pk=settlement_id))
 
     return trip

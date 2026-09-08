@@ -167,6 +167,36 @@ class TestLateTripsAndEdits:
         details = {d.user_id: d for d in settlement.details.all()}
         assert details[admin.id].registered_km == 30
 
+    def test_editing_a_trip_that_crosses_a_boundary_recalculates_both(self, family, vehicle):
+        """Editar un viaje para que cruce el límite de una liquidación hacia el
+        período siguiente debe recalcular el settlement que SOLAPA parcialmente
+        (no solo el que lo contiene por completo, que no existe)."""
+        owner = family["owner"]
+
+        settlement_1 = _create_fuel_load_and_settle(
+            vehicle, owner, "2026-07-01", odometer_km=1100, amount=Decimal("1000.00")
+        )
+        assert settlement_1.unassigned_km == 100  # no hay viajes aún
+
+        # viaje que originalmente cae en el período abierto (después de 1100)
+        trip = _create_trip(vehicle, owner, "2026-07-02", 1120, 1160)  # 40 km
+        assert trip.settlement_id is None
+
+        # se corrige el km: ahora arranca DENTRO de la liquidación cerrada
+        # (empieza en 1050 < period_end=1100) y termina después del límite.
+        trip.start_km = 1050
+        trip.end_km = 1160
+        trip.save()
+        services.assign_and_recalculate_trip(trip)
+
+        # settlement_1 solapa el viaje parcialmente (1050→1100 = 50 km) y debe
+        # recalcular aunque el FK del viaje no apunte a él
+        settlement_1.refresh_from_db()
+        assert settlement_1.unassigned_km == 50  # 100 - 50
+
+        details_1 = {d.user_id: d for d in settlement_1.details.all()}
+        assert details_1[owner.id].registered_km == 50
+
     def test_editing_a_trip_moves_it_to_the_correct_settlement(self, family, vehicle):
         owner = family["owner"]
 
