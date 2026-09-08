@@ -48,12 +48,13 @@ export class SummaryComponent implements OnInit {
 
   private periodDays: Record<PeriodKey, number> = { semana: 7, mes: 30, '3meses': 90 };
   private colors = [
-    'var(--blue-700)',
+    'var(--blue-400)',
     'var(--green)',
     'var(--amber)',
-    'var(--blue-400)',
     'var(--purple)',
+    'var(--gray-700)',
     'var(--red-pink)',
+    'var(--blue-500)',
   ];
 
   ngOnInit(): void {

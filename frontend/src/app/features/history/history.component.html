@@ -21,7 +21,7 @@
       <div class="gaps-section">
         <p class="gaps-title">⚠️ Km sin registrar ({{ kmGaps.length }})</p>
         <div class="gaps-list">
-          @for (gap of kmGaps; track gap.id) {
+          @for (gap of visibleGaps; track gap.id) {
             <div class="gap-item">
               <p class="gap-period">{{ gap.periodLabel }}</p>
               <p class="gap-range">
@@ -34,6 +34,11 @@
             </div>
           }
         </div>
+        @if (hasMoreGaps) {
+          <button class="btn btn-secondary gaps-toggle" type="button" (click)="toggleAllGaps()">
+            {{ showAllGaps() ? 'Ver menos' : 'Ver más' }}
+          </button>
+        }
       </div>
     }
 

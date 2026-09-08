@@ -19,7 +19,7 @@ type FilterKey = 'todos' | 'viajes' | 'cargas';
 interface HistoryRecord {
   id: string;
   date: string;
-  sortKey: string;
+  sortKey: number;
   type: 'trip' | 'fuel';
   userName: string;
   userId: number;
@@ -64,6 +64,8 @@ export class HistoryComponent implements OnInit {
   loading = signal(true);
   errorMessage = signal<string | null>(null);
   filter = signal<FilterKey>('todos');
+  /** Muestra los 3 primeros huecos; al pulsar "ver más" se despliegan todos. */
+  showAllGaps = signal(false);
 
   private currentUserId = 0;
   private currentUserRole = signal<GroupRole | null>(null);
@@ -114,11 +116,11 @@ export class HistoryComponent implements OnInit {
       .map((t) => ({
         id: `trip-${t.id}`,
         date: t.trip_date,
-        sortKey: `${t.trip_date}-${String(t.id).padStart(6, '0')}`,
+        sortKey: t.start_km,
         type: 'trip' as const,
         userName: this.memberName(t.user),
         userId: t.user,
-        label: `${formatKm(t.start_km)} → ${formatKm(t.end_km)}  Total: ${formatKm(t.km_traveled)} km`,
+        label: `${formatKm(t.start_km)} km → ${formatKm(t.end_km)} km / ${formatKm(t.km_traveled)} km`,
         tripId: t.id,
         clickable: canEditAny || t.user === this.currentUserId,
       }));
@@ -130,7 +132,7 @@ export class HistoryComponent implements OnInit {
         return {
           id: `fuel-${f.id}`,
           date: f.load_date,
-          sortKey: `${f.load_date}-${String(f.id).padStart(6, '0')}`,
+          sortKey: f.odometer_km,
           type: 'fuel' as const,
           userName: this.memberName(f.loaded_by),
         userId: f.loaded_by,
@@ -140,7 +142,13 @@ export class HistoryComponent implements OnInit {
         };
       });
 
-    const all = [...tripRecords, ...fuelRecords].sort((a, b) => (a.sortKey < b.sortKey ? 1 : -1));
+    // Orden cronológico por km (descendente: primero el km más alto/último):
+    // viajes por start_km, cargas por odometer_km. La fecha queda solo como
+    // dato; no define el orden.
+    const all = [...tripRecords, ...fuelRecords].sort((a, b) => {
+      if (a.sortKey !== b.sortKey) return b.sortKey - a.sortKey;
+      return a.date < b.date ? -1 : a.date > b.date ? 1 : 0;
+    });
 
     if (this.filter() === 'viajes') return all.filter((r) => r.type === 'trip');
     if (this.filter() === 'cargas') return all.filter((r) => r.type === 'fuel');
@@ -184,27 +192,43 @@ export class HistoryComponent implements OnInit {
     const gaps: KmGap[] = [];
 
     for (const period of periods) {
+      // Mismo criterio que el backend (recalculate_settlement): los viajes se
+      // cuentan por SOLAPAMIENTO de rango de km (start_km < period_end AND
+      // end_km > period_start), NO por el FK settlement. El FK solo se asigna
+      // a los viajes creados DESPUÉS de haber liquidado el período; los que
+      // estaban en el período abierto al momento de la carga quedan con
+      // settlement=null y, si filtrásemos por FK, reportarían huecos falsos.
       const periodTrips = this.trips()
-        .filter((t) => t.settlement === period.settlementId)
+        .filter((t) =>
+          period.end === null
+            ? t.end_km > period.start
+            : t.start_km < period.end && t.end_km > period.start,
+        )
         .sort((a, b) => a.start_km - b.start_km);
 
       let cursor = period.start;
       let lastTripLabel: string | null = null;
 
       for (const trip of periodTrips) {
-        if (trip.start_km > cursor) {
+        // Recortamos el viaje al rango de ESTE período (igual que el backend
+        // prorratea con clip_start/clip_end): un viaje que cruza el límite
+        // aporta acá solo la parte que cae dentro de la liquidación.
+        const clipEnd = period.end === null ? trip.end_km : Math.min(trip.end_km, period.end);
+        const clipStart = Math.max(trip.start_km, period.start);
+
+        if (clipStart > cursor) {
           gaps.push({
             id: `gap-${period.settlementId ?? 'open'}-${cursor}`,
             periodLabel: period.label,
             gapStartKm: cursor,
-            gapEndKm: trip.start_km,
-            gapSize: trip.start_km - cursor,
+            gapEndKm: clipStart,
+            gapSize: clipStart - cursor,
             beforeLabel: lastTripLabel ?? 'el inicio del período',
-            afterLabel: `${this.memberName(trip.user)} (arranca en ${formatKm(trip.start_km)} km)`,
+            afterLabel: `${this.memberName(trip.user)} (arranca en ${formatKm(clipStart)} km)`,
           });
         }
-        cursor = Math.max(cursor, trip.end_km);
-        lastTripLabel = `${this.memberName(trip.user)} (hasta ${formatKm(trip.end_km)} km)`;
+        cursor = Math.max(cursor, clipEnd);
+        lastTripLabel = `${this.memberName(trip.user)} (hasta ${formatKm(clipEnd)} km)`;
       }
 
       if (period.end !== null && cursor < period.end) {
@@ -220,7 +244,22 @@ export class HistoryComponent implements OnInit {
       }
     }
 
-    return gaps;
+    // Orden: primero el km más alto (el más reciente), como en el historial.
+    return gaps.sort((a, b) => b.gapStartKm - a.gapStartKm);
+  }
+
+  /** Los huecos visibles: los 3 primeros, o todos si se expandió. */
+  get visibleGaps(): KmGap[] {
+    return this.showAllGaps() ? this.kmGaps : this.kmGaps.slice(0, 3);
+  }
+
+  /** Hay huecos ocultos tras el "ver más"? */
+  get hasMoreGaps(): boolean {
+    return this.kmGaps.length > 3;
+  }
+
+  toggleAllGaps(): void {
+    this.showAllGaps.update((v) => !v);
   }
 
   memberName(userId: number): string {
