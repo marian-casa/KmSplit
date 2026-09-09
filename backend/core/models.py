@@ -153,6 +153,14 @@ class Settlement(models.Model):
     )
     created_at = models.DateTimeField(auto_now_add=True)
 
+    class Meta:
+        indexes = [
+            models.Index(
+                fields=["vehicle", "period_start_km", "period_end_km"],
+                name="settlement_vehicle_km_idx",
+            )
+        ]
+
     def __str__(self):
         return f"Liquidación {self.vehicle.name} ({self.period_start_km}-{self.period_end_km} km)"
 
