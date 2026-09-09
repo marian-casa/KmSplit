@@ -120,7 +120,7 @@ export class HistoryComponent implements OnInit {
         type: 'trip' as const,
         userName: this.memberName(t.user),
         userId: t.user,
-        label: `${formatKm(t.start_km)} km → ${formatKm(t.end_km)} km / ${formatKm(t.km_traveled)} km`,
+        label: `${formatKm(t.start_km)} → ${formatKm(t.end_km)} km / ${formatKm(t.km_traveled)} km`,
         tripId: t.id,
         clickable: canEditAny || t.user === this.currentUserId,
       }));
@@ -269,9 +269,11 @@ export class HistoryComponent implements OnInit {
   onRecordClick(record: HistoryRecord): void {
     if (!record.clickable) return;
 
+    const returnTo = this.scope === 'week' ? 'week' : 'full';
+
     if (record.type === 'trip' && record.tripId) {
       this.router.navigate(['/vehiculo', this.vehicleId, 'viaje'], {
-        queryParams: { tripId: record.tripId },
+        queryParams: { tripId: record.tripId, returnTo },
       });
     } else if (record.type === 'fuel' && record.settlementId) {
       this.router.navigate(['/vehiculo', this.vehicleId, 'liquidacion', record.settlementId]);
