@@ -230,7 +230,7 @@ class TestRememberMe:
 
 class TestRememberMeProductionHardening:
     def test_login_no_crash_when_samesite_none_without_secure(self, test_user, settings):
-        """Regresión: Django 5.1 lanza ValueError con SameSite=None sin Secure.
+        """Regresión: Django lanza ValueError con SameSite=None sin Secure.
         El login no debe convertirse en un 500 por eso nunca."""
         settings.COOKIE_SAMESITE = "None"
         settings.COOKIE_SECURE = False
