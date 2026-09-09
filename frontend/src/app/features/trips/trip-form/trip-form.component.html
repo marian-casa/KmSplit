@@ -8,7 +8,15 @@
   @if (loadingContext()) {
     <p class="muted">Cargando...</p>
   } @else {
-    <p class="registering-as">Registrando como <strong>{{ userName() }}</strong></p>
+    @if (editingTripId()) {
+      @if (editingTripUserName()) {
+        <p class="registering-as">Editando el viaje de <strong>{{ editingTripUserName() }}</strong></p>
+      } @else {
+        <p class="registering-as">Editando un viaje tuyo</p>
+      }
+    } @else {
+      <p class="registering-as">Registrando como <strong>{{ userName() }}</strong></p>
+    }
 
     @if (lastOwnTrip() && !editingTripId()) {
       <button class="last-trip-card" type="button" (click)="editLastTrip()">

@@ -34,6 +34,9 @@ export class AuthService {
    *  ya está en vuelo (varios componentes montando a la vez). */
   private fetchMeRequest: Observable<User> | null = null;
 
+  /** Cache simple para usuarios por ID (evita requests repetidos). */
+  private userCache = new Map<number, User>();
+
   get accessToken(): string | null {
     return localStorage.getItem(ACCESS_TOKEN_KEY);
   }
@@ -90,6 +93,17 @@ export class AuthService {
     }
     return this.http.get<User>(`${this.baseUrl}/me/`).pipe(
       tap((user) => this.currentUserSubject.next(user)),
+    );
+  }
+
+  /** Obtiene un usuario por ID (usa cache simple para evitar requests repetidos). */
+  getUserById(id: number): Observable<User> {
+    const cached = this.userCache.get(id);
+    if (cached) {
+      return of(cached);
+    }
+    return this.http.get<User>(`${this.baseUrl}/users/${id}/`).pipe(
+      tap((user) => this.userCache.set(id, user)),
     );
   }
 

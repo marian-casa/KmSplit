@@ -264,6 +264,19 @@ class MeView(APIView):
         return Response(UserSerializer(request.user).data)
 
 
+class UserDetailView(APIView):
+    """GET /api/auth/users/{id}/ — datos públicos de un usuario (nombre, email)."""
+
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get(self, request, pk):
+        try:
+            user = User.objects.get(pk=pk)
+        except User.DoesNotExist:
+            return Response({"detail": "Usuario no encontrado."}, status=status.HTTP_404_NOT_FOUND)
+        return Response(UserSerializer(user).data)
+
+
 def _get_latest_valid_reset(email):
     """Devuelve el PasswordReset vigente del usuario (si existe), o None."""
     try:

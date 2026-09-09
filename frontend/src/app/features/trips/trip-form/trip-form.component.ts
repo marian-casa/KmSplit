@@ -60,6 +60,8 @@ export class TripFormComponent implements OnInit {
     end_km_full: [null as number | null],
   });
 
+  editingTripUserName = signal<string | null>(null);
+
   ngOnInit(): void {
     // si venimos desde el historial a editar un viaje puntual (propio o
     // ajeno, según permisos), viene marcado en la URL: ?tripId=123
@@ -98,6 +100,12 @@ export class TripFormComponent implements OnInit {
           const trip = trips.find((t) => t.id === Number(tripIdToEdit));
           if (trip) {
             this.applyTripToForm(trip);
+            // Si el viaje es de otro usuario, traer su nombre
+            if (user && trip.user !== user.id) {
+              this.auth.getUserById(trip.user).subscribe({
+                next: (u) => this.editingTripUserName.set(u.name),
+              });
+            }
           }
         }
 
