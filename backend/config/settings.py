@@ -76,6 +76,30 @@ DATABASES = {
     )
 }
 
+# Cache
+# Con REDIS_URL seteada (producción / Railway) usa Redis: memoria compartida
+# entre todos los workers de gunicorn, así el bloqueo de login, el throttling
+# de DRF y los códigos de reset son GLOBALES (un atacante no puede rotar entre
+# workers). Sin REDIS_URL (desarrollo local) cae a la cache en RAM del proceso,
+# que para un solo worker de runserver alcanza.
+REDIS_URL = config('REDIS_URL', default='')
+
+if REDIS_URL:
+    CACHES = {
+        'default': {
+            'BACKEND': 'django.core.cache.backends.redis.RedisCache',
+            'LOCATION': REDIS_URL,
+            'TIMEOUT': 300,
+        }
+    }
+else:
+    CACHES = {
+        'default': {
+            'BACKEND': 'django.core.cache.backends.locmem.LocMemCache',
+            'TIMEOUT': 300,
+        }
+    }
+
 # Password validation
 # https://docs.djangoproject.com/en/5.1/ref/settings/#auth-password-validators
 

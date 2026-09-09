@@ -18,12 +18,27 @@ services:
       timeout: 5s
       retries: 5
 
+  redis:
+    image: redis:7-alpine
+    container_name: kmsplit_redis
+    restart: unless-stopped
+    ports:
+      - "6379:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+
   backend:
     build:
       context: ./backend
     container_name: kmsplit_backend
     restart: unless-stopped
     command: python manage.py runserver 0.0.0.0:8000
+    environment:
+      # cache compartida igual que en Railway (redis://redis dentro de la red de compose)
+      REDIS_URL: redis://redis:6379/0
     volumes:
       - ./backend:/app
     ports:
@@ -32,6 +47,8 @@ services:
       - ./backend/.env
     depends_on:
       db:
+        condition: service_healthy
+      redis:
         condition: service_healthy
 
   frontend:
