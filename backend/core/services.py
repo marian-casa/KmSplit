@@ -1,15 +1,20 @@
-"""
-Lógica de negocio para la liquidación de gastos (settlements).
-
-Dos puntos de entrada:
-- create_settlement_for_fuel_load(fuel_load): se llama al registrar una carga nueva.
-- assign_and_recalculate_trip(trip): se llama al crear o editar un viaje, por si
-  cae dentro del rango de un settlement ya existente y hay que recalcularlo.
-"""
-
 from decimal import ROUND_HALF_UP, Decimal
 
+from django.core.cache import cache
+
 from .models import FuelLoad, GroupMembership, Settlement, SettlementDetail, Trip
+
+DASHBOARD_CACHE_TTL = 300
+
+
+def dashboard_cache_key(vehicle_id):
+    return f"dashboard:vehicle:{vehicle_id}"
+
+
+def invalidate_vehicle_dashboard(vehicle_id):
+    """Invalida la cache del payload del dashboard cuando cambian sus datos
+    (viajes, cargas, liquidaciones o miembros del grupo)."""
+    cache.delete(dashboard_cache_key(vehicle_id))
 
 
 def _quantize(value):

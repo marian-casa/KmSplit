@@ -1,9 +1,19 @@
 import pytest
 from django.contrib.auth import get_user_model
+from django.core.cache import cache
 
 from core.models import Group, GroupMembership, Vehicle
 
 User = get_user_model()
+
+
+@pytest.fixture(autouse=True)
+def clear_cache():
+    """Limpia la cache de Django entre tests.
+
+    El dashboard ahora cachea su payload en Redis/LocMem; sin limpiar la
+    cache, un test podría recibir un payload viejo calculado por otro test."""
+    cache.clear()
 
 
 @pytest.fixture

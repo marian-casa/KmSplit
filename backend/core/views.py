@@ -1,3 +1,4 @@
+from django.core.cache import cache
 from django.utils import timezone
 from rest_framework import permissions, status, viewsets
 from rest_framework.decorators import action
@@ -43,6 +44,9 @@ class GroupViewSet(viewsets.ModelViewSet):
             membership.removed_at = None
             membership.save()
 
+        for vehicle in group.vehicles.all():
+            services.invalidate_vehicle_dashboard(vehicle.id)
+
         return Response(GroupSerializer(group).data, status=status.HTTP_200_OK)
 
     @action(detail=True, methods=["post"])
@@ -78,6 +82,9 @@ class GroupViewSet(viewsets.ModelViewSet):
         membership.is_active = False
         membership.removed_at = timezone.now()
         membership.save(update_fields=["is_active", "removed_at"])
+
+        for vehicle in group.vehicles.all():
+            services.invalidate_vehicle_dashboard(vehicle.id)
 
         return Response({"detail": "Saliste del grupo."})
 
@@ -122,6 +129,8 @@ class GroupViewSet(viewsets.ModelViewSet):
             target.removed_at = timezone.now()
 
         target.save()
+        for vehicle in group.vehicles.all():
+            services.invalidate_vehicle_dashboard(vehicle.id)
         return Response(GroupMembershipSerializer(target).data)
 
 
@@ -143,6 +152,11 @@ class VehicleViewSet(viewsets.ModelViewSet):
         hacían por separado (evita round-trips + serialización)."""
         vehicle = self.get_object()
 
+        cache_key = services.dashboard_cache_key(vehicle.id)
+        cached = cache.get(cache_key)
+        if cached is not None:
+            return Response(cached)
+
         group = Group.objects.filter(
             members__user=request.user, members__is_active=True
         ).distinct().select_related().first()
@@ -152,19 +166,25 @@ class VehicleViewSet(viewsets.ModelViewSet):
                 "members", "members__user"
             ).first()
 
-        trips = Trip.objects.filter(vehicle=vehicle).order_by("-trip_date")
-        fuel_loads = FuelLoad.objects.filter(vehicle=vehicle).order_by("-load_date")
+        trips = Trip.objects.filter(vehicle=vehicle).select_related(
+            "user", "settlement", "edited_by"
+        ).order_by("-trip_date")
+        fuel_loads = FuelLoad.objects.filter(vehicle=vehicle).select_related(
+            "loaded_by"
+        ).order_by("-load_date")
         settlements = Settlement.objects.filter(vehicle=vehicle).prefetch_related(
             "details", "details__user", "fuel_load", "fuel_load__loaded_by"
         ).order_by("-created_at")
 
-        return Response({
+        payload = {
             "vehicle": VehicleSerializer(vehicle).data,
             "group": GroupSerializer(group).data if group else None,
             "trips": TripSerializer(trips, many=True).data,
             "fuel_loads": FuelLoadSerializer(fuel_loads, many=True).data,
             "settlements": SettlementSerializer(settlements, many=True).data,
-        })
+        }
+        cache.set(cache_key, payload, timeout=services.DASHBOARD_CACHE_TTL)
+        return Response(payload)
 
     def perform_create(self, serializer):
         group = serializer.validated_data["group"]
@@ -204,10 +224,12 @@ class TripViewSet(viewsets.ModelViewSet):
     def perform_create(self, serializer):
         trip = serializer.save(user=self.request.user)
         services.assign_and_recalculate_trip(trip)
+        services.invalidate_vehicle_dashboard(trip.vehicle_id)
 
     def perform_update(self, serializer):
         trip = serializer.save(edited_by=self.request.user)
         services.assign_and_recalculate_trip(trip)
+        services.invalidate_vehicle_dashboard(trip.vehicle_id)
 
     def get_permissions(self):
         if self.action in ("update", "partial_update"):
@@ -233,15 +255,18 @@ class FuelLoadViewSet(viewsets.ModelViewSet):
     def perform_create(self, serializer):
         fuel_load = serializer.save(loaded_by=self.request.user)
         services.create_settlement_for_fuel_load(fuel_load)
+        services.invalidate_vehicle_dashboard(fuel_load.vehicle_id)
         return fuel_load
 
     def perform_update(self, serializer):
         fuel_load = serializer.save()
         services.sync_settlement_for_fuel_load(fuel_load)
+        services.invalidate_vehicle_dashboard(fuel_load.vehicle_id)
         return fuel_load
 
     def perform_destroy(self, instance):
         services.delete_settlement_for_fuel_load(instance)
+        services.invalidate_vehicle_dashboard(instance.vehicle_id)
         instance.delete()
 
     def get_permissions(self):
@@ -280,4 +305,5 @@ class SettlementViewSet(viewsets.ReadOnlyModelViewSet):
         settlement.status = new_status
         settlement.status_updated_by = request.user
         settlement.save()
+        services.invalidate_vehicle_dashboard(settlement.vehicle_id)
         return Response(SettlementSerializer(settlement).data)
